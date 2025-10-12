@@ -1,8 +1,36 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Required for DateFormat
-import 'package:mee_yatt_htar/helpers/assets.dart';
-// Assuming your project structure uses a package path for the database helper
-import 'package:mee_yatt_htar/helpers/employee.dart';
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+// Note: You must ensure 'mee_yatt_htar/helpers/assets.dart'
+// and 'mee_yatt_htar/helpers/employee.dart' are available in your project.
+// For this example to run without errors, these package imports are assumed to exist.
+
+// Placeholder data structures (since real ones aren't provided)
+const List<String> educationLevel = [
+  'High School',
+  'Bachelor',
+  'Master',
+  'PhD',
+];
+const List<String> bloodTypes = [
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'O+',
+  'O-',
+  'AB+',
+  'AB-',
+];
+const List<String> assignedBranch = ['Branch A', 'Branch B', 'Branch C'];
+const List<String> salaryRange = [
+  '100k-200k',
+  '200k-400k',
+  '400k-600k',
+  '600k+',
+];
 
 class AddEmployeeScreen extends StatefulWidget {
   const AddEmployeeScreen({super.key});
@@ -12,7 +40,6 @@ class AddEmployeeScreen extends StatefulWidget {
 }
 
 class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
-  // Controllers for each field
   final TextEditingController _fullNameController = TextEditingController();
   String? _gender;
   String? _educationLevel;
@@ -40,11 +67,59 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
 
   DateTime? _selectedDate;
 
-  // Dispose controllers to free up memory
+  File? _imageFile;
+  final _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(
+      source: source,
+      maxWidth: 1000,
+      imageQuality: 70,
+    );
+
+    if (pickedFile != null) {
+      if (!mounted) return;
+
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Photo Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _fullNameController.dispose();
-    // _genderController.dispose();
     _fatherNameController.dispose();
     _motherNameController.dispose();
     _nrcNumberController.dispose();
@@ -61,7 +136,6 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     super.dispose();
   }
 
-  // --- Date Picker Logic ---
   Future<void> _selectDate(BuildContext context, int flag) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -71,9 +145,10 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
 
     if (picked != null && picked != _selectedDate) {
+      if (!mounted) return;
+
       setState(() {
         _selectedDate = picked;
-        // Use DateFormat for robust date string generation
         switch (flag) {
           case 0:
             _dateOfBirthController.text = DateFormat(
@@ -90,6 +165,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             _currentPositionAssignDateController.text = DateFormat(
               'dd/MM/yyyy',
             ).format(picked);
+            break;
         }
       });
     }
@@ -105,56 +181,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     return age;
   }
 
-  // --- SQLite Save Logic ---
-  void _saveEmployee() async {
-    // Basic validation
-    if (_fullNameController.text.isEmpty ||
-        _dateOfBirthController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Full Name and Date of Birth are required.'),
-        ),
-      );
-      return;
-    }
-
-    // Create a new Employee object from the controller values (Employee is imported)
-    // final newEmployee = Employee(
-    //   fullName: _fullNameController.text,
-    //   gender: _gender,
-    //   fatherName: _fatherNameController.text,
-    //   nrcNumber: _nrcNumberController.text,
-    //   dateOfBirth: _dateOfBirthController.text,
-    //   age: int.tryParse(_ageController.text) ?? 0, // Safely parse age
-    //   occupation: _occupationController.text,
-
-    //   remarks: _remarksController.text,
-    // );
-
-    try {
-      // Call the database helper to insert the employee (DatabaseHelper is imported)
-      // int id = await DatabaseHelper.instance.insertEmployee(newEmployee);
-
-      // // Show success message and clear form
-      // _clearFields();
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text('Employee ${newEmployee.fullName} saved! ID: $id'),
-      //   ),
-      // );
-    } catch (e) {
-      // Show error message
-      print('Database insert failed: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save employee: $e')));
-    }
-  }
-
-  // Helper to clear all input fields
   void _clearFields() {
     _fullNameController.clear();
-    // _genderController.clear();
     _fatherNameController.clear();
     _motherNameController.clear();
     _nrcNumberController.clear();
@@ -163,12 +191,19 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     _occupationController.clear();
     _addressController.clear();
     _firstAssignedPositionController.clear();
-    _currentPositionController.dispose();
-    _currentPositionAssignDateController.dispose();
+    _firstAssignedDateController.clear();
+    _currentPositionController.clear();
+    _currentPositionAssignDateController.clear();
     _currentSalaryController.clear();
     _remarksController.clear();
     setState(() {
       _selectedDate = null;
+      _imageFile = null;
+      _gender = null;
+      _educationLevel = null;
+      _bloodType = null;
+      _assignedBranch = null;
+      _currentSalaryRange = null;
     });
   }
 
@@ -182,22 +217,67 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              buildTextField(_fullNameController, "Full Name", "Mg Hla Mg"),
-              RadioGroup(
-                groupValue: _gender,
-                onChanged: (value) {
-                  setState(() {
-                    _gender = value;
-                  });
-                },
-                child: Row(
-                  children: [
-                    Radio<String>(value: "Male"),
-                    const Text("Male"),
-                    Radio<String>(value: "Female"),
-                    const Text("Female"),
-                  ],
+              GestureDetector(
+                onTap: _showImageSourceDialog,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey),
+                  ),
+                  child: _imageFile != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(_imageFile!, fit: BoxFit.cover),
+                        )
+                      : const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_a_photo,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                              Text(
+                                'Add Photo',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
+              ),
+              buildTextField(_fullNameController, "Full Name", "Mg Hla Mg"),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text("Male"),
+                      value: "Male",
+                      groupValue: _gender,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _gender = value;
+                        });
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text("Female"),
+                      value: "Female",
+                      groupValue: _gender,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _gender = value;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
               buildTextField(_fatherNameController, "Father's Name", "U Hla"),
               buildTextField(
@@ -210,28 +290,26 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 "NRC Number",
                 "12/KaMaNa(N)123456",
               ),
-              // Date of Birth field
               buildDateField(
                 _dateOfBirthController,
                 "Date of Birth",
                 "DD/MM/YYYY",
                 0,
               ),
-              // Age field (read-only)
               buildTextField(
                 _ageController,
                 "Age",
                 "e.g. 30",
                 isReadOnly: true,
               ),
-
-              // buildDropDownlist(),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
-                child: DropdownButton(
+                child: DropdownButtonFormField<String>(
                   value: _educationLevel,
-                  isExpanded: true,
-                  hint: Text("Select Education Level"),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: "Select Education Level",
+                  ),
                   items: educationLevel.map((String item) {
                     return DropdownMenuItem<String>(
                       value: item,
@@ -247,10 +325,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
-                child: DropdownButton(
+                child: DropdownButtonFormField<String>(
                   value: _bloodType,
-                  hint: Text("Select Blood Group"),
-                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: "Select Blood Group",
+                  ),
                   items: bloodTypes.map((String item) {
                     return DropdownMenuItem<String>(
                       value: item,
@@ -271,10 +351,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
-                child: DropdownButton(
+                child: DropdownButtonFormField<String>(
                   value: _assignedBranch,
-                  hint: Text("Select Assigned Branch"),
-                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: "Select Assigned Branch",
+                  ),
                   items: assignedBranch.map((String item) {
                     return DropdownMenuItem<String>(
                       value: item,
@@ -293,7 +375,6 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 "First assigned Position",
                 "junior content writer",
               ),
-              const Text("First Assigned Date"),
               buildDateField(
                 _firstAssignedDateController,
                 "First Assigned Date",
@@ -307,10 +388,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
-                child: DropdownButton(
+                child: DropdownButtonFormField<String>(
                   value: _currentSalaryRange,
-                  hint: Text("Select Salary Range"),
-                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: "Select Salary Range",
+                  ),
                   items: salaryRange.map((String item) {
                     return DropdownMenuItem<String>(
                       value: item,
@@ -319,12 +402,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   }).toList(),
                   onChanged: (String? value) {
                     setState(() {
-                      _assignedBranch = value;
+                      _currentSalaryRange = value;
                     });
                   },
                 ),
               ),
-              const Text("Current Position Assigned Date"),
               buildDateField(
                 _currentPositionAssignDateController,
                 "Current Position Assigned Date",
@@ -335,13 +417,20 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 _currentSalaryController,
                 "Current Salary",
                 "eg. 100000",
+                isNumber: true,
               ),
               buildTextField(_remarksController, "Remarks", "Any notes"),
               const SizedBox(height: 20),
               ElevatedButton(
-                // Call the save function on press
-                onPressed: _saveEmployee,
-                child: const Text("Add"),
+                onPressed: () {
+                  // Implement your employee saving logic here
+                },
+                child: const Text("Add Employee"),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: _clearFields,
+                child: const Text("Clear Fields"),
               ),
             ],
           ),
@@ -350,13 +439,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
   }
 
-  // Generic TextField builder
   Widget buildTextField(
     TextEditingController controller,
     String label,
     String hint, {
     bool isReadOnly = false,
-    bool isNumber = false, // Use this for numerical inputs
+    bool isNumber = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
@@ -373,7 +461,6 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
   }
 
-  // Specific TextField builder for Date Picker
   Widget buildDateField(
     TextEditingController controller,
     String label,
@@ -384,15 +471,14 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: TextField(
         controller: controller,
-        readOnly: true, // Make the field read-only
-        onTap: () => _selectDate(context, flag), // Launch date picker on tap
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          labelText: "Select Date",
-          hintText: "DD/MM/YYYY",
-          suffixIcon: Icon(Icons.calendar_today), // Add a calendar icon
+        readOnly: true,
+        onTap: () => _selectDate(context, flag),
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: label,
+          hintText: hint,
+          suffixIcon: const Icon(Icons.calendar_today),
         ),
-        // onChanged is intentionally left out for readOnly fields
       ),
     );
   }
