@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:mee_yatt_htar/screens/employees.dart';
 
 void main() {

@@ -2,17 +2,22 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
+import 'package:mee_yatt_htar/screens/edit_employee.dart';
 
 // -----------------------------------------------------------------------------
 // 1. EMPLOYEE DETAIL SCREEN
 // -----------------------------------------------------------------------------
-
 class EmployeeDetailScreen extends StatelessWidget {
   final Employee employee;
+  final Function()? onEmployeeUpdated;
 
-  const EmployeeDetailScreen({super.key, required this.employee});
+  const EmployeeDetailScreen({
+    super.key,
+    required this.employee,
+    this.onEmployeeUpdated,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +28,7 @@ class EmployeeDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // TODO: Implement edit functionality
+              _navigateToEditScreen(context);
             },
           ),
         ],
@@ -98,8 +103,7 @@ class EmployeeDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Training Courses
-            if (employee.trainingCourses != null &&
-                employee.trainingCourses!.isNotEmpty)
+            if (employee.trainingCourses.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,7 +111,7 @@ class EmployeeDetailScreen extends StatelessWidget {
                   Wrap(
                     spacing: 8.0,
                     runSpacing: 4.0,
-                    children: employee.trainingCourses!
+                    children: employee.trainingCourses
                         .map(
                           (course) => Chip(
                             label: Text(course),
@@ -141,6 +145,20 @@ class EmployeeDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _navigateToEditScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditEmployeeScreen(employee: employee),
+      ),
+    ).then((result) {
+      // Refresh the detail screen if employee was updated
+      if (result == true && onEmployeeUpdated != null) {
+        onEmployeeUpdated!();
+      }
+    });
   }
 
   Widget _buildProfileImage() {
@@ -564,20 +582,18 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                 _applyFilters();
               },
             ),
-          ..._currentFilters.selectedValues
-              .map(
-                (value) => Chip(
-                  label: Text(value),
-                  deleteIcon: const Icon(Icons.close, size: 16),
-                  onDeleted: () {
-                    setState(() {
-                      _currentFilters.selectedValues.remove(value);
-                    });
-                    _applyFilters();
-                  },
-                ),
-              )
-              .toList(),
+          ..._currentFilters.selectedValues.map(
+            (value) => Chip(
+              label: Text(value),
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: () {
+                setState(() {
+                  _currentFilters.selectedValues.remove(value);
+                });
+                _applyFilters();
+              },
+            ),
+          ),
           if (_currentFilters.hasActiveFilters ||
               _searchController.text.isNotEmpty)
             ActionChip(

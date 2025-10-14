@@ -1,164 +1,26 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
+import 'package:intl/intl.dart';
+import 'package:mee_yatt_htar/screens/add_employee.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 // -----------------------------------------------------------------------------
-// 1. TRAINING CHIPS INPUT WIDGET
+// 1. EDIT EMPLOYEE SCREEN
 // -----------------------------------------------------------------------------
 
-class TrainingChipsInput extends StatefulWidget {
-  final ValueChanged<List<String>> onChipsChanged;
-  final List<String> initialCourses;
+class EditEmployeeScreen extends StatefulWidget {
+  final Employee employee;
 
-  const TrainingChipsInput({
-    super.key,
-    required this.onChipsChanged,
-    this.initialCourses = const [],
-  });
+  const EditEmployeeScreen({super.key, required this.employee});
 
   @override
-  State<TrainingChipsInput> createState() => _TrainingChipsInputState();
+  State<EditEmployeeScreen> createState() => _EditEmployeeScreenState();
 }
 
-class _TrainingChipsInputState extends State<TrainingChipsInput> {
-  final TextEditingController _inputController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  late List<String> _courseChips;
-
-  @override
-  void initState() {
-    super.initState();
-    _courseChips = List.from(widget.initialCourses);
-  }
-
-  @override
-  void dispose() {
-    _inputController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _addChip(String name) {
-    final trimmedName = name.trim();
-    if (trimmedName.isNotEmpty && !_courseChips.contains(trimmedName)) {
-      setState(() {
-        _courseChips.add(trimmedName);
-        _inputController.clear();
-        widget.onChipsChanged(_courseChips);
-      });
-      _focusNode.requestFocus();
-    } else if (trimmedName.isNotEmpty) {
-      _inputController.clear();
-      _focusNode.requestFocus();
-    }
-  }
-
-  void _removeChip(String name) {
-    setState(() {
-      _courseChips.remove(name);
-      widget.onChipsChanged(_courseChips);
-    });
-  }
-
-  Widget _buildChip(String courseName) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
-      child: Chip(
-        label: Text(courseName),
-        backgroundColor: Colors.teal.shade100,
-        deleteIcon: const Icon(Icons.close, size: 18),
-        onDeleted: () => _removeChip(courseName),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_courseChips.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-            child: Wrap(
-              spacing: 4.0,
-              runSpacing: 4.0,
-              children: _courseChips.map(_buildChip).toList(),
-            ),
-          ),
-        TextFormField(
-          controller: _inputController,
-          focusNode: _focusNode,
-          decoration: InputDecoration(
-            labelText: 'သင်တန်းအမည် ထည့်သွင်းပါ',
-            hintText: 'ဥပမာ: ေရ ှာင်းကကြီး',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.add_circle, color: Colors.teal),
-              onPressed: () => _addChip(_inputController.text),
-            ),
-          ),
-          onFieldSubmitted: _addChip,
-        ),
-        const SizedBox(height: 5),
-      ],
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// 2. ADD EMPLOYEE SCREEN
-// -----------------------------------------------------------------------------
-
-// Constants
-class AppConstants {
-  static const List<String> educationLevels = [
-    'High School',
-    'Bachelor',
-    'Master',
-    'PhD',
-  ];
-
-  static const List<String> bloodTypes = [
-    'A+',
-    'A-',
-    'B+',
-    'B-',
-    'O+',
-    'O-',
-    'AB+',
-    'AB-',
-  ];
-
-  static const List<String> assignedBranches = [
-    'Branch A',
-    'Branch B',
-    'Branch C',
-  ];
-
-  static const List<String> salaryRanges = [
-    '100k-200k',
-    '200k-400k',
-    '400k-600k',
-    '600k+',
-  ];
-
-  static const double defaultPadding = 16.0;
-  static const double fieldSpacing = 8.0;
-}
-
-class AddEmployeeScreen extends StatefulWidget {
-  const AddEmployeeScreen({super.key});
-
-  @override
-  State<AddEmployeeScreen> createState() => _AddEmployeeScreenState();
-}
-
-class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
+class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
   // Controllers
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _fatherNameController = TextEditingController();
@@ -189,6 +51,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   List<String> _trainingCoursesList = [];
   DateTime? _selectedDate;
   File? _imageFile;
+  String? _originalImagePath;
 
   final ImagePicker _picker = ImagePicker();
   final List<TextEditingController> _controllers = [];
@@ -196,7 +59,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers list for easy disposal
+    _initializeControllers();
+    _prefillData();
+  }
+
+  void _initializeControllers() {
     _controllers.addAll([
       _fullNameController,
       _fatherNameController,
@@ -213,6 +80,59 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       _currentSalaryController,
       _remarksController,
     ]);
+  }
+
+  void _prefillData() {
+    final employee = widget.employee;
+
+    // Personal Information
+    _fullNameController.text = employee.fullName;
+    _gender = employee.gender;
+    _fatherNameController.text = employee.fatherName ?? '';
+    _motherNameController.text = employee.motherName ?? '';
+    _nrcNumberController.text = employee.nrcNumber ?? '';
+    _dateOfBirthController.text = employee.dateOfBirth ?? '';
+    _ageController.text = employee.age?.toString() ?? '';
+    _educationLevel = employee.educationLevel;
+    _bloodType = employee.bloodType;
+    _addressController.text = employee.address ?? '';
+
+    // Employment Information
+    _assignedBranch = employee.assignedBranch;
+    _firstAssignedPositionController.text =
+        employee.firstAssignedPosition ?? '';
+    _firstAssignedDateController.text = employee.firstAssignedDate ?? '';
+    _currentPositionController.text = employee.currentPosition ?? '';
+    _currentSalaryRange = employee.currentSalaryRange;
+    _currentPositionAssignDateController.text =
+        employee.currentPositionAssignDate ?? '';
+    _currentSalaryController.text = employee.currentSalary ?? '';
+
+    // Training and Remarks
+    _trainingCoursesList = List.from(employee.trainingCourses);
+    _remarksController.text = employee.remarks ?? '';
+
+    // Image
+    _originalImagePath = employee.imagePath;
+    if (employee.imagePath != null) {
+      _imageFile = File(employee.imagePath!);
+    }
+
+    // Parse dates if they exist
+    _parseExistingDates();
+  }
+
+  void _parseExistingDates() {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    try {
+      if (widget.employee.dateOfBirth != null &&
+          widget.employee.dateOfBirth!.isNotEmpty) {
+        _selectedDate = dateFormat.parse(widget.employee.dateOfBirth!);
+      }
+    } catch (e) {
+      print('Error parsing date: $e');
+    }
   }
 
   @override
@@ -266,6 +186,20 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   _pickImage(ImageSource.camera);
                 },
               ),
+              if (_imageFile != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text(
+                    'Remove Photo',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() {
+                      _imageFile = null;
+                    });
+                  },
+                ),
             ],
           ),
         );
@@ -273,7 +207,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
   }
 
-  Future<String?> _saveImagePermanently(File imageFile) async {
+  Future<String?> _saveImagePermanently(File? imageFile) async {
+    if (imageFile == null) return _originalImagePath;
+
     try {
       final directory = await getApplicationDocumentsDirectory();
       final fileName =
@@ -283,7 +219,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       return newImage.path;
     } catch (e) {
       print('Error saving image: $e');
-      return null;
+      return _originalImagePath;
     }
   }
 
@@ -356,19 +292,22 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
   }
 
-  // Core saving logic
-  Future<void> _saveEmployee() async {
+  // Core update logic
+  Future<void> _updateEmployee() async {
     if (!_validateForm()) return;
 
     try {
-      // Save Image (if one was picked)
+      // Save Image (if one was picked or changed)
       String? finalImagePath;
-      if (_imageFile != null) {
+      if (_imageFile != null && _imageFile!.path != _originalImagePath) {
         finalImagePath = await _saveImagePermanently(_imageFile!);
+      } else {
+        finalImagePath = _originalImagePath;
       }
 
-      // Create the Employee object
-      final newEmployee = Employee(
+      // Create the updated Employee object
+      final updatedEmployee = Employee(
+        id: widget.employee.id, // Preserve the original ID
         fullName: _fullNameController.text.trim(),
         gender: _gender,
         fatherName: _fatherNameController.text.trim(),
@@ -391,37 +330,22 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         imagePath: finalImagePath,
       );
 
-      // Insert into the database
-      final id = await DatabaseHelper.instance.insertEmployee(newEmployee);
+      // Update in the database
+      final rowsAffected = await DatabaseHelper.instance.updateEmployee(
+        updatedEmployee,
+      );
 
       if (!mounted) return;
 
-      if (id > 0) {
-        _showSuccessSnackBar('Employee added successfully! ID: $id');
-        _clearFields();
+      if (rowsAffected > 0) {
+        _showSuccessSnackBar('Employee updated successfully!');
+        Navigator.of(context).pop(true); // Return success flag
       } else {
-        _showErrorSnackBar('Failed to save employee record.');
+        _showErrorSnackBar('Failed to update employee record.');
       }
     } catch (e) {
-      _showErrorSnackBar('Error saving employee: $e');
+      _showErrorSnackBar('Error updating employee: $e');
     }
-  }
-
-  void _clearFields() {
-    for (final controller in _controllers) {
-      controller.clear();
-    }
-
-    setState(() {
-      _selectedDate = null;
-      _imageFile = null;
-      _gender = null;
-      _educationLevel = null;
-      _bloodType = null;
-      _assignedBranch = null;
-      _currentSalaryRange = null;
-      _trainingCoursesList = [];
-    });
   }
 
   void _updateTrainingList(List<String> newList) {
@@ -430,7 +354,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     });
   }
 
-  // Widget builders
+  // Widget builders (similar to AddEmployeeScreen)
   Widget _buildImagePicker() {
     return GestureDetector(
       onTap: _showImageSourceDialog,
@@ -446,6 +370,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.file(_imageFile!, fit: BoxFit.cover),
+              )
+            : _originalImagePath != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.file(File(_originalImagePath!), fit: BoxFit.cover),
               )
             : const Center(
                 child: Column(
@@ -469,7 +398,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     TextInputType? keyboardType,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
         readOnly: isReadOnly,
@@ -492,7 +421,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     int flag,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
         readOnly: true,
@@ -515,9 +444,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     required String Function(T item) displayString,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: DropdownButtonFormField<T>(
-        initialValue: value,
+        value: value,
         decoration: InputDecoration(
           border: const OutlineInputBorder(),
           hintText: hintText,
@@ -564,30 +493,18 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: _saveEmployee,
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
-          ),
-          child: const Text("Add Employee"),
-        ),
-        const SizedBox(height: 10),
-        TextButton(onPressed: _clearFields, child: const Text("Clear Fields")),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(centerTitle: true, title: const Text("Add New Employee")),
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text("Edit Employee"),
+        actions: [
+          IconButton(icon: const Icon(Icons.save), onPressed: _updateEmployee),
+        ],
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             // Photo Upload
@@ -687,9 +604,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
 
             // Training Section
             Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppConstants.fieldSpacing,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: TrainingChipsInput(
                 onChipsChanged: _updateTrainingList,
                 initialCourses: _trainingCoursesList,
@@ -699,10 +614,37 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             _buildTextField(_remarksController, "Remarks", "Any notes"),
 
             // Action Buttons
-            _buildActionButtons(),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _updateEmployee,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    child: const Text(
+                      "Update Employee",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// 2. UPDATE EMPLOYEE DETAIL SCREEN WITH EDIT FUNCTIONALITY
+// -----------------------------------------------------------------------------

@@ -70,5 +70,16 @@ class DatabaseHelper {
     });
   }
 
+  Future<int> updateEmployee(Employee employee) async {
+    final db = await database;
+
+    return await db.update(
+      'employees',
+      employee.toMap(),
+      where: 'id = ?',
+      whereArgs: [employee.id],
+    );
+  }
+
   // You can add update and delete methods as well if needed.
 }
