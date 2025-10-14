@@ -1,35 +1,34 @@
 import 'package:flutter/material.dart';
 
 class UpperScreen extends StatelessWidget {
+  const UpperScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
       flex: 1,
-      child: Container(
-        // color: const Color.fromARGB(66, 255, 255, 255),
-        child: Padding(
-          padding: EdgeInsets.all(10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color.fromARGB(
-                    83,
-                    0,
-                    0,
-                    0,
-                  ), // Shadow color with opacity
-                  spreadRadius: 5, // Expands the shadow
-                  blurRadius: 7, // Blurs the shadow
-                  offset: Offset(0, 3), // Shifts the shadow down
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset("assets/images/train.jpg", fit: BoxFit.cover),
-            ),
+      child: Padding(
+        padding: EdgeInsets.all(10),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromARGB(
+                  83,
+                  0,
+                  0,
+                  0,
+                ), // Shadow color with opacity
+                spreadRadius: 5, // Expands the shadow
+                blurRadius: 7, // Blurs the shadow
+                offset: Offset(0, 3), // Shifts the shadow down
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset("assets/images/train.jpg", fit: BoxFit.cover),
           ),
         ),
       ),
@@ -38,6 +37,8 @@ class UpperScreen extends StatelessWidget {
 }
 
 class BottomScreen extends StatelessWidget {
+  const BottomScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -56,15 +57,20 @@ class BottomScreen extends StatelessWidget {
 }
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [UpperScreen(), BottomScreen()],
+    return Scaffold(
+      appBar: AppBar(title: const Text("Home")),
+      body: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [UpperScreen(), BottomScreen()],
+        ),
       ),
     );
     // throw UnimplementedError();

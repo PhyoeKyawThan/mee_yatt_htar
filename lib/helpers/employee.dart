@@ -1,127 +1,112 @@
-import 'package:sqflite/sqflite.dart'; // Required for SQLite operations
-import 'package:path/path.dart'; // Required for database path handling
-import 'dart:async';
+// employee.dart
+import 'dart:convert';
 
-// ----------------------------------------------------
-// 1. Employee Model (Data Structure)
-// ----------------------------------------------------
-/// Defines the structure for storing employee information.
 class Employee {
   int? id;
-  String fullName;
-  String? gender;
-  String fatherName;
-  String nrcNumber;
-  String dateOfBirth; // Storing as String (DD/MM/YYYY)
-  int age;
-  String occupation;
-  String householdStatus;
-  String householdMembers;
-  String householdSize;
-  String income;
-  String salaryRange;
-  String monthlyExpenditure;
-  String savings;
-  String remarks;
+  final String fullName;
+  final String? gender;
+  final String? fatherName;
+  final String? motherName;
+  final String? nrcNumber;
+  final String? dateOfBirth;
+  final int? age;
+  final String? educationLevel;
+  final String? bloodType;
+  final String? address;
+  final String? assignedBranch;
+  final String? firstAssignedPosition;
+  final String? firstAssignedDate;
+  final String? currentPosition;
+  final String? currentSalaryRange;
+  final String? currentPositionAssignDate;
+  final String? currentSalary;
+  final List<String> trainingCourses; // The List<String>
+  final String? remarks;
+  final String? imagePath; // Path to the stored image file
 
   Employee({
     this.id,
     required this.fullName,
-    required this.gender,
-    required this.fatherName,
-    required this.nrcNumber,
-    required this.dateOfBirth,
-    required this.age,
-    required this.occupation,
-    required this.householdStatus,
-    required this.householdMembers,
-    required this.householdSize,
-    required this.income,
-    required this.salaryRange,
-    required this.monthlyExpenditure,
-    required this.savings,
-    required this.remarks,
+    this.gender,
+    this.fatherName,
+    this.motherName,
+    this.nrcNumber,
+    this.dateOfBirth,
+    this.age,
+    this.educationLevel,
+    this.bloodType,
+    this.address,
+    this.assignedBranch,
+    this.firstAssignedPosition,
+    this.firstAssignedDate,
+    this.currentPosition,
+    this.currentSalaryRange,
+    this.currentPositionAssignDate,
+    this.currentSalary,
+    required this.trainingCourses,
+    this.remarks,
+    this.imagePath,
   });
 
-  // Converts the Employee object into a Map for database insertion.
+  // Convert an Employee object into a Map (for saving to DB)
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'fullName': fullName,
       'gender': gender,
       'fatherName': fatherName,
+      'motherName': motherName,
       'nrcNumber': nrcNumber,
       'dateOfBirth': dateOfBirth,
       'age': age,
-      'occupation': occupation,
-      'householdStatus': householdStatus,
-      'householdMembers': householdMembers,
-      'householdSize': householdSize,
-      'income': income,
-      'salaryRange': salaryRange,
-      'monthlyExpenditure': monthlyExpenditure,
-      'savings': savings,
+      'educationLevel': educationLevel,
+      'bloodType': bloodType,
+      'address': address,
+      'assignedBranch': assignedBranch,
+      'firstAssignedPosition': firstAssignedPosition,
+      'firstAssignedDate': firstAssignedDate,
+      'currentPosition': currentPosition,
+      'currentSalaryRange': currentSalaryRange,
+      'currentPositionAssignDate': currentPositionAssignDate,
+      'currentSalary': currentSalary,
+      // Convert the List<String> to a JSON string for storage
+      'trainingCourses': jsonEncode(trainingCourses),
       'remarks': remarks,
+      'imagePath': imagePath,
     };
   }
-}
 
-// ----------------------------------------------------
-// 2. Database Helper Class (SQLite Operations)
-// ----------------------------------------------------
-/// Singleton class to manage database connection and CRUD operations.
-class DatabaseHelper {
-  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
-  static Database? _database;
-  static const String tableName = 'employees';
+  // Create an Employee object from a Map (for reading from DB)
+  factory Employee.fromMap(Map<String, dynamic> map) {
+    // Deserialize the JSON string back into a List<String>
+    List<String> courses = [];
+    if (map['trainingCourses'] != null) {
+      final decoded = jsonDecode(map['trainingCourses'] as String);
+      courses = List<String>.from(decoded);
+    }
 
-  DatabaseHelper._privateConstructor();
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB();
-    return _database!;
-  }
-
-  // Initializes the database connection.
-  Future<Database> _initDB() async {
-    String path = join(await getDatabasesPath(), 'employee_database.db');
-
-    return await openDatabase(path, version: 1, onCreate: _createDB);
-  }
-
-  // Creates the database table.
-  Future _createDB(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE $tableName(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fullName TEXT,
-        gender TEXT,
-        fatherName TEXT,
-        nrcNumber TEXT,
-        dateOfBirth TEXT,
-        age INTEGER,
-        occupation TEXT,
-        householdStatus TEXT,
-        householdMembers TEXT,
-        householdSize TEXT,
-        income TEXT,
-        salaryRange TEXT,
-        monthlyExpenditure TEXT,
-        savings TEXT,
-        remarks TEXT
-      )
-    ''');
-  }
-
-  // Inserts a new employee record into the database.
-  Future<int> insertEmployee(Employee employee) async {
-    final db = await instance.database;
-    return await db.insert(
-      tableName,
-      employee.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+    return Employee(
+      id: map['id'] as int?,
+      fullName: map['fullName'] as String,
+      gender: map['gender'] as String?,
+      fatherName: map['fatherName'] as String?,
+      motherName: map['motherName'] as String?,
+      nrcNumber: map['nrcNumber'] as String?,
+      dateOfBirth: map['dateOfBirth'] as String?,
+      age: map['age'] as int?,
+      educationLevel: map['educationLevel'] as String?,
+      bloodType: map['bloodType'] as String?,
+      address: map['address'] as String?,
+      assignedBranch: map['assignedBranch'] as String?,
+      firstAssignedPosition: map['firstAssignedPosition'] as String?,
+      firstAssignedDate: map['firstAssignedDate'] as String?,
+      currentPosition: map['currentPosition'] as String?,
+      currentSalaryRange: map['currentSalaryRange'] as String?,
+      currentPositionAssignDate: map['currentPositionAssignDate'] as String?,
+      currentSalary: map['currentSalary'] as String?,
+      trainingCourses: courses, // Use the deserialized list
+      remarks: map['remarks'] as String?,
+      imagePath: map['imagePath'] as String?,
     );
   }
-
-  // You would add other methods here (e.g., getEmployees, updateEmployee, deleteEmployee)
 }
