@@ -19,132 +19,47 @@ class EmployeeDetailScreen extends StatelessWidget {
     this.onEmployeeUpdated,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(employee.fullName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              _navigateToEditScreen(context);
-            },
+  Future<void> _refreshEmployeeData(BuildContext context) async {
+    try {
+      final updatedEmployee = await DatabaseHelper.instance.getEmployeeById(
+        employee.id!,
+      );
+
+      if (updatedEmployee != null) {
+        // Simply push a new instance of the same screen with updated data
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EmployeeDetailScreen(
+              employee: updatedEmployee,
+              onEmployeeUpdated: onEmployeeUpdated,
+            ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Image
-            _buildProfileImage(),
-            const SizedBox(height: 20),
+        );
 
-            // Personal Information
-            _buildSectionHeader('Personal Information'),
-            _buildInfoRow('Full Name', employee.fullName),
-            _buildInfoRow('Gender', employee.gender ?? 'Not specified'),
-            _buildInfoRow(
-              'Father\'s Name',
-              employee.fatherName ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'Mother\'s Name',
-              employee.motherName ?? 'Not specified',
-            ),
-            _buildInfoRow('NRC Number', employee.nrcNumber ?? 'Not specified'),
-            _buildInfoRow(
-              'Date of Birth',
-              employee.dateOfBirth ?? 'Not specified',
-            ),
-            _buildInfoRow('Age', employee.age?.toString() ?? 'Not specified'),
-            _buildInfoRow(
-              'Education Level',
-              employee.educationLevel ?? 'Not specified',
-            ),
-            _buildInfoRow('Blood Type', employee.bloodType ?? 'Not specified'),
-            _buildInfoRow('Address', employee.address ?? 'Not specified'),
-
-            const SizedBox(height: 20),
-
-            // Employment Information
-            _buildSectionHeader('Employment Information'),
-            _buildInfoRow(
-              'Assigned Branch',
-              employee.assignedBranch ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'First Position',
-              employee.firstAssignedPosition ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'First Assigned Date',
-              employee.firstAssignedDate ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'Current Position',
-              employee.currentPosition ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'Position Assign Date',
-              employee.currentPositionAssignDate ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'Salary Range',
-              employee.currentSalaryRange ?? 'Not specified',
-            ),
-            _buildInfoRow(
-              'Current Salary',
-              employee.currentSalary ?? 'Not specified',
-            ),
-
-            const SizedBox(height: 20),
-
-            // Training Courses
-            if (employee.trainingCourses.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Training Courses'),
-                  Wrap(
-                    spacing: 8.0,
-                    runSpacing: 4.0,
-                    children: employee.trainingCourses
-                        .map(
-                          (course) => Chip(
-                            label: Text(course),
-                            backgroundColor: Colors.blue.shade100,
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-
-            // Remarks
-            if (employee.remarks != null && employee.remarks!.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Remarks'),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12.0),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Text(employee.remarks!),
-                  ),
-                ],
-              ),
-          ],
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Employee data refreshed'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Employee not found'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error refreshing data: $e'),
+          backgroundColor: Colors.red,
         ),
-      ),
-    );
+      );
+    }
   }
 
   void _navigateToEditScreen(BuildContext context) {
@@ -154,11 +69,155 @@ class EmployeeDetailScreen extends StatelessWidget {
         builder: (context) => EditEmployeeScreen(employee: employee),
       ),
     ).then((result) {
-      // Refresh the detail screen if employee was updated
-      if (result == true && onEmployeeUpdated != null) {
-        onEmployeeUpdated!();
+      // Refresh if employee was updated
+      if (result == true) {
+        _refreshEmployeeData(context);
       }
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(employee.fullName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _navigateToEditScreen(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _refreshEmployeeData(context),
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () => _refreshEmployeeData(context),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Profile Image
+              _buildProfileImage(),
+              const SizedBox(height: 20),
+
+              // Personal Information
+              _buildSectionHeader('Personal Information'),
+              _buildInfoRow('Full Name', employee.fullName),
+              _buildInfoRow('Gender', employee.gender ?? 'Not specified'),
+              _buildInfoRow(
+                'Father\'s Name',
+                employee.fatherName ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Mother\'s Name',
+                employee.motherName ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'NRC Number',
+                employee.nrcNumber ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Date of Birth',
+                employee.dateOfBirth ?? 'Not specified',
+              ),
+              _buildInfoRow('Age', employee.age?.toString() ?? 'Not specified'),
+              _buildInfoRow(
+                'Education Level',
+                employee.educationLevel ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Blood Type',
+                employee.bloodType ?? 'Not specified',
+              ),
+              _buildInfoRow('Address', employee.address ?? 'Not specified'),
+
+              const SizedBox(height: 20),
+
+              // Employment Information
+              _buildSectionHeader('Employment Information'),
+              _buildInfoRow(
+                'Assigned Branch',
+                employee.assignedBranch ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'First Position',
+                employee.firstAssignedPosition ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'First Assigned Date',
+                employee.firstAssignedDate ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Current Position',
+                employee.currentPosition ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Position Assign Date',
+                employee.currentPositionAssignDate ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Salary Range',
+                employee.currentSalaryRange ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Current Salary',
+                employee.currentSalary ?? 'Not specified',
+              ),
+
+              const SizedBox(height: 20),
+
+              // Training Courses
+              if (employee.trainingCourses.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Training Courses'),
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 4.0,
+                      children: employee.trainingCourses
+                          .map(
+                            (course) => Chip(
+                              label: Text(course),
+                              backgroundColor: Colors.blue.shade100,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+
+              // Remarks
+              if (employee.remarks != null && employee.remarks!.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Remarks'),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Text(employee.remarks!),
+                    ),
+                  ],
+                ),
+
+              // Add some extra space at the bottom for better pull-to-refresh
+              const SizedBox(height: 50),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildProfileImage() {

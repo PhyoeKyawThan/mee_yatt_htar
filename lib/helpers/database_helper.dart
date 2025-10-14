@@ -60,6 +60,21 @@ class DatabaseHelper {
     );
   }
 
+  Future<Employee?> getEmployeeById(int id) async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'employees',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Employee.fromMap(maps.first);
+    }
+    return null;
+  }
+
   // Retrieve all employee records
   Future<List<Employee>> getEmployees() async {
     Database db = await instance.database;
