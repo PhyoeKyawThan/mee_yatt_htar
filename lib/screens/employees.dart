@@ -79,6 +79,7 @@ class EmployeeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // DatabaseHelper.instance.uploadEmployees();
     return Scaffold(
       appBar: AppBar(
         title: Text(employee.fullName),
