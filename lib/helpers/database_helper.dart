@@ -60,6 +60,15 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> deleteEmployee(Employee employee) async {
+    Database db = await instance.database;
+    return await db.delete(
+      'employees',
+      where: 'id = ?',
+      whereArgs: [employee.id],
+    );
+  }
+
   Future<Employee?> getEmployeeById(int id) async {
     final db = await database;
 
@@ -94,6 +103,55 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [employee.id],
     );
+  }
+
+  Future<void> sampleInsert() async {
+    final db = await instance.database;
+
+    db.rawInsert("""INSERT INTO employees (
+    fullName,
+    gender,
+    fatherName,
+    motherName,
+    nrcNumber,
+    dateOfBirth,
+    age,
+    educationLevel,
+    bloodType,
+    address,
+    assignedBranch,
+    firstAssignedPosition,
+    firstAssignedDate,
+    currentPosition,
+    currentSalaryRange,
+    currentPositionAssignDate,
+    currentSalary,
+    trainingCourses,
+    remarks,
+    imagePath
+) VALUES (
+    'Aung Kyaw Moe',
+    'Male',
+    'U Kyaw Win',
+    'Daw Mya Mya',
+    '12/PaKaNa(N)123456',
+    '12/05/1995',
+    30,
+    'Bachelor',
+    'B+',
+    'No.23, 5th Street, Yangon',
+    'Branch A',
+    'Junior Developer',
+    '2019-03-01',
+    'Senior Developer',
+    '100k-200k',
+    '10/02/2024',
+    '950000',
+    '["Flutter Development", "Database Management", "Leadership Training"]',
+    'Excellent performance in recent project',
+    '/storage/emulated/0/Android/data/com.example.mee_yatt_htar/files/images/aungkyawmoe.jpg')
+""");
+    // db.execute(sql)
   }
 
   // You can add update and delete methods as well if needed.

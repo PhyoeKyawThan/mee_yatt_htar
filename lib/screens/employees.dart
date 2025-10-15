@@ -5,6 +5,7 @@ import 'package:mee_yatt_htar/helpers/employee.dart';
 // import 'package:intl/intl.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:mee_yatt_htar/screens/edit_employee.dart';
+import 'package:sqflite/sqflite.dart';
 
 // -----------------------------------------------------------------------------
 // 1. EMPLOYEE DETAIL SCREEN
@@ -280,15 +281,49 @@ class EmployeeDetailScreen extends StatelessWidget {
 class EmployeeListItem extends StatelessWidget {
   final Employee employee;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const EmployeeListItem({
     super.key,
     required this.employee,
     required this.onTap,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    void _showDeleteConfirmationDialog() {
+      showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Delete Employee'),
+            content: Text(
+              'Are you sure you want to delete ${employee.fullName}? This action cannot be undone.',
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Close the dialog
+                },
+              ),
+              TextButton(
+                // Use a distinct color for the delete action
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Close the dialog first
+                  DatabaseHelper.instance.deleteEmployee(employee);
+                  onDelete();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: ListTile(
@@ -319,6 +354,7 @@ class EmployeeListItem extends StatelessWidget {
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
+        onLongPress: _showDeleteConfirmationDialog,
       ),
     );
   }
@@ -671,6 +707,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
     }
 
     if (_filteredEmployees.isEmpty) {
+      // DatabaseHelper.instance.sampleInsert();
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -710,6 +747,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
           return EmployeeListItem(
             employee: employee,
             onTap: () => _navigateToEmployeeDetail(employee),
+            onDelete: () {
+              setState(() {
+                _filteredEmployees.removeAt(index);
+              });
+            },
           );
         },
       ),
