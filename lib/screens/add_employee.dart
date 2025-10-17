@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
+import 'package:mee_yatt_htar/screens/subs/autocomplete.dart';
 import 'package:path_provider/path_provider.dart';
 
 // -----------------------------------------------------------------------------
@@ -112,44 +114,7 @@ class _TrainingChipsInputState extends State<TrainingChipsInput> {
 
 // -----------------------------------------------------------------------------
 // 2. ADD EMPLOYEE SCREEN
-// -----------------------------------------------------------------------------
-
-// Constants
-class AppConstants {
-  static const List<String> educationLevels = [
-    'High School',
-    'Bachelor',
-    'Master',
-    'PhD',
-  ];
-
-  static const List<String> bloodTypes = [
-    'A+',
-    'A-',
-    'B+',
-    'B-',
-    'O+',
-    'O-',
-    'AB+',
-    'AB-',
-  ];
-
-  static const List<String> assignedBranches = [
-    'Branch A',
-    'Branch B',
-    'Branch C',
-  ];
-
-  static const List<String> salaryRanges = [
-    '100k-200k',
-    '200k-400k',
-    '400k-600k',
-    '600k+',
-  ];
-
-  static const double defaultPadding = 16.0;
-  static const double fieldSpacing = 8.0;
-}
+// ------------------------------------------
 
 class AddEmployeeScreen extends StatefulWidget {
   const AddEmployeeScreen({super.key});
@@ -179,6 +144,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   final TextEditingController _currentSalaryController =
       TextEditingController();
   final TextEditingController _remarksController = TextEditingController();
+
+  final TextEditingController _educationDescConrtoller =
+      TextEditingController();
 
   // State variables
   String? _gender;
@@ -212,6 +180,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       _currentPositionAssignDateController,
       _currentSalaryController,
       _remarksController,
+      _educationDescConrtoller,
     ]);
   }
 
@@ -377,6 +346,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         dateOfBirth: _dateOfBirthController.text,
         age: int.tryParse(_ageController.text),
         educationLevel: _educationLevel,
+        educationDesc: _educationDescConrtoller.text.trim(),
         bloodType: _bloodType,
         address: _addressController.text.trim(),
         assignedBranch: _assignedBranch,
@@ -467,21 +437,34 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     bool isReadOnly = false,
     bool isNumber = false,
     TextInputType? keyboardType,
+    List<String>? suggestions,
   }) {
+    // Determine if it should be the Autocomplete version
+    final bool useAutocomplete = suggestions != null && suggestions.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
-      child: TextField(
-        controller: controller,
-        readOnly: isReadOnly,
-        keyboardType:
-            keyboardType ??
-            (isNumber ? TextInputType.number : TextInputType.text),
-        decoration: InputDecoration(
-          border: const OutlineInputBorder(),
-          labelText: label,
-          hintText: hint,
-        ),
-      ),
+      child: useAutocomplete
+          ? AutocompleteTextField(
+              // key: UniqueKey(),
+              controller: controller,
+              label: label,
+              hint: hint,
+              suggestions: suggestions!,
+              isReadOnly: isReadOnly,
+            )
+          : TextField(
+              controller: controller,
+              readOnly: isReadOnly,
+              keyboardType:
+                  keyboardType ??
+                  (isNumber ? TextInputType.number : TextInputType.text),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: label,
+                hintText: hint,
+              ),
+            ),
     );
   }
 
@@ -623,7 +606,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               onChanged: (value) => setState(() => _educationLevel = value),
               displayString: (item) => item,
             ),
-
+            _buildTextField(
+              _educationDescConrtoller,
+              "Education Description",
+              "eg. Secondary passed",
+            ),
             _buildDropdownFormField<String>(
               hintText: "Select Blood Group",
               items: AppConstants.bloodTypes,
@@ -651,6 +638,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               _firstAssignedPositionController,
               "First assigned Position",
               "junior content writer",
+              suggestions: AppConstants.positionSuggestions,
             ),
             _buildDateField(
               _firstAssignedDateController,
@@ -662,6 +650,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               _currentPositionController,
               "Current Position",
               "Senior Write",
+              suggestions: AppConstants.positionSuggestions,
             ),
 
             _buildDropdownFormField<String>(
@@ -691,6 +680,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 vertical: AppConstants.fieldSpacing,
               ),
               child: TrainingChipsInput(
+                key: UniqueKey(),
                 onChipsChanged: _updateTrainingList,
                 initialCourses: _trainingCoursesList,
               ),

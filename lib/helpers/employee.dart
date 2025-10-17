@@ -11,6 +11,7 @@ class Employee {
   final String? dateOfBirth;
   final int? age;
   final String? educationLevel;
+  final String? educationDesc;
   final String? bloodType;
   final String? address;
   final String? assignedBranch;
@@ -34,6 +35,7 @@ class Employee {
     this.dateOfBirth,
     this.age,
     this.educationLevel,
+    this.educationDesc,
     this.bloodType,
     this.address,
     this.assignedBranch,
@@ -60,6 +62,7 @@ class Employee {
       'dateOfBirth': dateOfBirth,
       'age': age,
       'educationLevel': educationLevel,
+      'educationDesc': educationDesc,
       'bloodType': bloodType,
       'address': address,
       'assignedBranch': assignedBranch,
@@ -95,6 +98,7 @@ class Employee {
       dateOfBirth: map['dateOfBirth'] as String?,
       age: map['age'] as int?,
       educationLevel: map['educationLevel'] as String?,
+      educationDesc: map['educationDesc'] as String?,
       bloodType: map['bloodType'] as String?,
       address: map['address'] as String?,
       assignedBranch: map['assignedBranch'] as String?,

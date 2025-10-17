@@ -77,6 +77,46 @@ class EmployeeDetailScreen extends StatelessWidget {
     });
   }
 
+  String calculateCurrentAge(String? birthDateString) {
+    if (birthDateString == null || birthDateString.isEmpty) {
+      return 'Not specified';
+    }
+
+    try {
+      final parts = birthDateString.split('/');
+      if (parts.length < 3) return 'Invalid date';
+
+      int day = int.parse(parts[0]);
+      int month = int.parse(parts[1]);
+      int year = int.parse(parts[2].length == 2 ? '20${parts[2]}' : parts[2]);
+
+      final birthDate = DateTime(year, month, day);
+      final today = DateTime.now();
+
+      int years = today.year - birthDate.year;
+      int months = today.month - birthDate.month;
+      int days = today.day - birthDate.day;
+
+      if (days < 0) {
+        final prevMonth = DateTime(today.year, today.month, 0);
+        days += prevMonth.day;
+        months--;
+      }
+
+      if (months < 0) {
+        months += 12;
+        years--;
+      }
+      String dates = "";
+      dates += years > 0 ? "$years years, " : "";
+      dates += months > 0 ? "$months months, " : "";
+      dates += days > 0 ? "$days days" : "";
+      return dates;
+    } catch (e) {
+      return 'Invalid date';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // DatabaseHelper.instance.uploadEmployees();
@@ -127,10 +167,17 @@ class EmployeeDetailScreen extends StatelessWidget {
                 'Date of Birth',
                 employee.dateOfBirth ?? 'Not specified',
               ),
-              _buildInfoRow('Age', employee.age?.toString() ?? 'Not specified'),
+              _buildInfoRow(
+                'Current Age',
+                calculateCurrentAge(employee.dateOfBirth),
+              ),
               _buildInfoRow(
                 'Education Level',
                 employee.educationLevel ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Education Description',
+                employee.educationDesc ?? 'Not Specified',
               ),
               _buildInfoRow(
                 'Blood Type',
@@ -161,6 +208,10 @@ class EmployeeDetailScreen extends StatelessWidget {
               _buildInfoRow(
                 'Position Assign Date',
                 employee.currentPositionAssignDate ?? 'Not specified',
+              ),
+              _buildInfoRow(
+                'Current position period',
+                calculateCurrentAge(employee.currentPositionAssignDate),
               ),
               _buildInfoRow(
                 'Salary Range',
@@ -390,67 +441,91 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Filter Employees',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Filter Employees',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
 
-          // Gender Filter
-          _buildFilterSection('Gender', [
-            _buildFilterChip('Male', 'Male'),
-            _buildFilterChip('Female', 'Female'),
-          ]),
+            // Gender Filter
+            _buildFilterSection('Gender', [
+              _buildFilterChip('Male', 'Male'),
+              _buildFilterChip('Female', 'Female'),
+            ]),
 
-          // Education Level Filter
-          _buildFilterSection('Education Level', [
-            _buildFilterChip('High School', 'High School'),
-            _buildFilterChip('Bachelor', 'Bachelor'),
-            _buildFilterChip('Master', 'Master'),
-            _buildFilterChip('PhD', 'PhD'),
-          ]),
+            // Education Level Filter
+            _buildFilterSection('Education Level', [
+              _buildFilterChip('ဝိဇ္ဇာ', 'ဝိဇ္ဇာ'),
+              _buildFilterChip('သိပ္ပံ', 'သိပ္ပံ'),
+              _buildFilterChip('အထက်တန်း', 'အထက်တန်း'),
+              _buildFilterChip('အလယ်တန်း', 'အလယ်တန်း'),
+              _buildFilterChip('မူလတန်း', 'မူလတန်း'),
+              _buildFilterChip('စာရေးတတ်ဖတ်တတ်', 'စာရေးတတ်ဖတ်တတ်'),
+            ]),
 
-          // Branch Filter
-          _buildFilterSection('Branch', [
-            _buildFilterChip('Branch A', 'Branch A'),
-            _buildFilterChip('Branch B', 'Branch B'),
-            _buildFilterChip('Branch C', 'Branch C'),
-          ]),
+            // Branch Filter
+            _buildFilterSection('Branch', [
+              _buildFilterChip('ဟင်္သာတ', 'ဟင်္သာတ'),
+              _buildFilterChip('ရေကြည်', 'ရေကြည်'),
+              _buildFilterChip('မဲဇလီကုန်း', 'မဲဇလီကုန်း'),
+              _buildFilterChip('ဥသျှစ်ပင်', 'ဥသျှစ်ပင်'),
+              _buildFilterChip('မင်းဘူး', 'မင်းဘူး'),
+              _buildFilterChip('သရက်', 'သရက်'),
+            ]),
 
-          // Salary Range Filter
-          _buildFilterSection('Salary Range', [
-            _buildFilterChip('100k-200k', '100k-200k'),
-            _buildFilterChip('200k-400k', '200k-400k'),
-            _buildFilterChip('400k-600k', '400k-600k'),
-            _buildFilterChip('600k+', '600k+'),
-          ]),
+            // Salary Range Filter
+            _buildFilterSection('Salary Range', [
+              _buildFilterChip('308000-4000-328000', '308000-4000-328000'),
+              _buildFilterChip('275000-4000-295000', '275000-4000-295000'),
+              _buildFilterChip('234000-2000-224000', '234000-2000-224000'),
+              _buildFilterChip('216000-2000-226000', '216000-2000-226000'),
+              _buildFilterChip('198000-2000-208000', '198000-2000-208000'),
+              _buildFilterChip('180000-2000-190000', '180000-2000-190000'),
+              _buildFilterChip('162000-2000-172000', '162000-2000-172000'),
+              _buildFilterChip('144000-2000-154000', '144000-2000-154000'),
+              // _buildFilterChip('200k-400k', '200k-400k'),
+              // _buildFilterChip('400k-600k', '400k-600k'),
+              // _buildFilterChip('600k+', '600k+'),
+            ]),
 
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _clearFilters,
-                  child: const Text('Clear All'),
+            //           List<String> ranges = [
+            //   "308000-4000-328000",
+            //   "275000-4000-295000",
+            //   "234000-2000-224000",
+            //   "216000-2000-226000",
+            //   "198000-2000-208000",
+            //   "180000-2000-190000",
+            //   "162000-2000-172000",
+            //   "144000-2000-154000",
+            // ];
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _clearFilters,
+                    child: const Text('Clear All'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _applyFilters,
-                  child: const Text('Apply Filters'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _applyFilters,
+                    child: const Text('Apply Filters'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
       ),
     );
   }
@@ -588,6 +663,8 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                 true ||
             employee.assignedBranch?.toLowerCase().contains(searchTerm) ==
                 true ||
+            employee.educationDesc?.toLowerCase().contains(searchTerm) ==
+                true ||
             employee.nrcNumber?.toLowerCase().contains(searchTerm) == true;
 
         // Apply other filters
@@ -643,7 +720,8 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search by name, position, branch, or NRC...',
+          hintText:
+              'Search by name, position, branch, education Description or NRC...',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: IconButton(
             icon: const Icon(Icons.clear),
