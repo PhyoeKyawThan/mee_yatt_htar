@@ -545,7 +545,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   Widget _buildFilterChip(String label, String value) {
     final isSelected = _currentFilters.selectedValues.contains(value);
     return FilterChip(
-      label: Text(label),
+      label: Text(label, style: TextStyle(fontSize: 12)),
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
