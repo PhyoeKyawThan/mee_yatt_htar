@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mee_yatt_htar/helpers/network_discovery.dart';
 import 'package:mee_yatt_htar/screens/employees.dart';
 
 void main() {
@@ -21,6 +22,12 @@ class _HomeState extends State<Home> {
   //     _currentOpenedIndex = index;
   //   });
   // }
+
+  @override
+  void initState() {
+    super.initState();
+    NetworkDiscovery.discoverServer(timeoutSeconds: 3);
+  }
 
   @override
   Widget build(BuildContext context) {

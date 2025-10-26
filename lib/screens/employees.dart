@@ -638,11 +638,12 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
         _filteredEmployees = employees;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       setState(() {
         _isLoading = false;
       });
       _showError('Failed to load employees: $e');
+      print(stackTrace);
     }
   }
 
@@ -876,6 +877,13 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             ),
             onPressed: _showFilterBottomSheet,
           ),
+          // FloatingActionButton(
+          //   heroTag: "",
+          //   onPressed: () {
+          //     DatabaseHelper.instance.uploadEmployees();
+          //   },
+          //   child: Text("Click"),
+          // ),
         ],
       ),
       body: Column(

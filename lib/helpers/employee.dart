@@ -81,36 +81,57 @@ class Employee {
 
   // Create an Employee object from a Map (for reading from DB)
   factory Employee.fromMap(Map<String, dynamic> map) {
-    // Deserialize the JSON string back into a List<String>
-    List<String> courses = [];
-    if (map['trainingCourses'] != null) {
-      final decoded = jsonDecode(map['trainingCourses'] as String);
-      courses = List<String>.from(decoded);
+    // Safe conversion helpers
+    int safeInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    String safeString(dynamic value) => value?.toString() ?? '';
+
+    List<String> safeStringList(dynamic value) {
+      if (value == null) return <String>[];
+      if (value is String) {
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is List) {
+            return List<String>.from(decoded.map((e) => e.toString()));
+          }
+        } catch (e) {
+          return <String>[];
+        }
+      }
+      if (value is List) {
+        return List<String>.from(value.map((e) => e.toString()));
+      }
+      return <String>[];
     }
 
     return Employee(
-      id: map['id'] as int?,
-      fullName: map['fullName'] as String,
-      gender: map['gender'] as String?,
-      fatherName: map['fatherName'] as String?,
-      motherName: map['motherName'] as String?,
-      nrcNumber: map['nrcNumber'] as String?,
-      dateOfBirth: map['dateOfBirth'] as String?,
-      age: map['age'] as int?,
-      educationLevel: map['educationLevel'] as String?,
-      educationDesc: map['educationDesc'] as String?,
-      bloodType: map['bloodType'] as String?,
-      address: map['address'] as String?,
-      assignedBranch: map['assignedBranch'] as String?,
-      firstAssignedPosition: map['firstAssignedPosition'] as String?,
-      firstAssignedDate: map['firstAssignedDate'] as String?,
-      currentPosition: map['currentPosition'] as String?,
-      currentSalaryRange: map['currentSalaryRange'] as String?,
-      currentPositionAssignDate: map['currentPositionAssignDate'] as String?,
-      currentSalary: map['currentSalary'] as String?,
-      trainingCourses: courses, // Use the deserialized list
-      remarks: map['remarks'] as String?,
-      imagePath: map['imagePath'] as String?,
+      id: safeInt(map['id']),
+      fullName: safeString(map['fullName']),
+      gender: safeString(map['gender']),
+      fatherName: safeString(map['fatherName']),
+      motherName: safeString(map['motherName']),
+      nrcNumber: safeString(map['nrcNumber']),
+      dateOfBirth: safeString(map['dateOfBirth']),
+      age: safeInt(map['age']),
+      educationLevel: safeString(map['educationLevel']),
+      educationDesc: safeString(map['educationDesc']),
+      bloodType: safeString(map['bloodType']),
+      address: safeString(map['address']),
+      assignedBranch: safeString(map['assignedBranch']),
+      firstAssignedPosition: safeString(map['firstAssignedPosition']),
+      firstAssignedDate: safeString(map['firstAssignedDate']),
+      currentPosition: safeString(map['currentPosition']),
+      currentSalaryRange: safeString(map['currentSalaryRange']),
+      currentPositionAssignDate: safeString(map['currentPositionAssignDate']),
+      currentSalary: safeString(map['currentSalary']),
+      trainingCourses: safeStringList(map['trainingCourses']),
+      remarks: safeString(map['remarks']),
+      imagePath: safeString(map['imagePath']),
     );
   }
 }
