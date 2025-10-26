@@ -10,9 +10,8 @@ import 'package:mee_yatt_htar/screens/subs/autocomplete.dart';
 import 'package:path_provider/path_provider.dart';
 
 // -----------------------------------------------------------------------------
-// 1. EDIT EMPLOYEE SCREEN
+// 1. EDIT EMPLOYEE SCREEN - RESPONSIVE
 // -----------------------------------------------------------------------------
-
 class EditEmployeeScreen extends StatefulWidget {
   final Employee employee;
 
@@ -45,6 +44,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
   final TextEditingController _remarksController = TextEditingController();
   final TextEditingController _educationDescController =
       TextEditingController();
+
   // State variables
   String? _gender;
   String? _educationLevel;
@@ -168,47 +168,115 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
   }
 
   void _showImageSourceDialog() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Photo Gallery'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Camera'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              if (_imageFile != null)
-                ListTile(
-                  leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text(
-                    'Remove Photo',
-                    style: TextStyle(color: Colors.red),
+    if (AppConstants.isDesktop) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text(
+                    'Choose Image Source',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildImageSourceButton(
+                        Icons.photo_library,
+                        'Gallery',
+                        () {
+                          Navigator.of(context).pop();
+                          _pickImage(ImageSource.gallery);
+                        },
+                      ),
+                      _buildImageSourceButton(Icons.camera_alt, 'Camera', () {
+                        Navigator.of(context).pop();
+                        _pickImage(ImageSource.camera);
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (_imageFile != null || _originalImagePath != null)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        setState(() {
+                          _imageFile = null;
+                        });
+                      },
+                      child: const Text(
+                        'Remove Photo',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Photo Gallery'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    setState(() {
-                      _imageFile = null;
-                    });
+                    _pickImage(ImageSource.gallery);
                   },
                 ),
-            ],
-          ),
-        );
-      },
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Camera'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                if (_imageFile != null || _originalImagePath != null)
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text(
+                      'Remove Photo',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        _imageFile = null;
+                      });
+                    },
+                  ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildImageSourceButton(
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
+    return Column(
+      children: [
+        IconButton(icon: Icon(icon, size: 40), onPressed: onTap),
+        const SizedBox(height: 8),
+        Text(label),
+      ],
     );
   }
 
@@ -360,13 +428,13 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     });
   }
 
-  // Widget builders (similar to AddEmployeeScreen)
+  // Widget builders
   Widget _buildImagePicker() {
     return GestureDetector(
       onTap: _showImageSourceDialog,
       child: Container(
-        width: 150,
-        height: 150,
+        width: AppConstants.imageSize,
+        height: AppConstants.imageSize,
         decoration: BoxDecoration(
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
@@ -382,12 +450,23 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.file(File(_originalImagePath!), fit: BoxFit.cover),
               )
-            : const Center(
+            : Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
-                    Text('Add Photo', style: TextStyle(color: Colors.grey)),
+                    Icon(
+                      Icons.add_a_photo,
+                      size: AppConstants.isDesktop ? 60 : 50,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Add Photo',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: AppConstants.isDesktop ? 16 : 14,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -404,14 +483,12 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     TextInputType? keyboardType,
     List<String>? suggestions,
   }) {
-    // Determine if it should be the Autocomplete version
     final bool useAutocomplete = suggestions != null && suggestions.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
+      padding: EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
       child: useAutocomplete
           ? AutocompleteTextField(
-              // key: UniqueKey(),
               controller: controller,
               label: label,
               hint: hint,
@@ -428,6 +505,10 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
                 border: const OutlineInputBorder(),
                 labelText: label,
                 hintText: hint,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: AppConstants.isDesktop ? 20 : 16,
+                ),
               ),
             ),
     );
@@ -440,7 +521,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     int flag,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
       child: TextField(
         controller: controller,
         readOnly: true,
@@ -450,6 +531,10 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
           labelText: label,
           hintText: hint,
           suffixIcon: const Icon(Icons.calendar_today),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: AppConstants.isDesktop ? 20 : 16,
+          ),
         ),
       ),
     );
@@ -463,17 +548,24 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     required String Function(T item) displayString,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
       child: DropdownButtonFormField<T>(
         value: value,
         decoration: InputDecoration(
           border: const OutlineInputBorder(),
           hintText: hintText,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: AppConstants.isDesktop ? 20 : 16,
+          ),
         ),
         items: items.map((T item) {
           return DropdownMenuItem<T>(
             value: item,
-            child: Text(displayString(item)),
+            child: Text(
+              displayString(item),
+              style: TextStyle(fontSize: AppConstants.fontSizeBody),
+            ),
           );
         }).toList(),
         onChanged: onChanged,
@@ -482,34 +574,251 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
   }
 
   Widget _buildGenderSelection() {
-    return Row(
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
+      child: Card(
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Gender',
+                style: TextStyle(
+                  fontSize: AppConstants.fontSizeBody,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text(
+                        "Male",
+                        style: TextStyle(fontSize: AppConstants.fontSizeBody),
+                      ),
+                      value: "Male",
+                      groupValue: _gender,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _gender = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text(
+                        "Female",
+                        style: TextStyle(fontSize: AppConstants.fontSizeBody),
+                      ),
+                      value: "Female",
+                      groupValue: _gender,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _gender = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Column(
       children: [
-        Expanded(
-          child: RadioListTile<String>(
-            title: const Text("Male"),
-            value: "Male",
-            groupValue: _gender,
-            onChanged: (String? value) {
-              setState(() {
-                _gender = value;
-              });
-            },
+        SizedBox(height: AppConstants.sectionSpacing),
+        ElevatedButton(
+          onPressed: _updateEmployee,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            padding: EdgeInsets.symmetric(
+              vertical: AppConstants.isDesktop ? 16 : 12,
+            ),
+          ),
+          child: Text(
+            "Update Employee",
+            style: TextStyle(fontSize: AppConstants.fontSizeBody),
           ),
         ),
-        Expanded(
-          child: RadioListTile<String>(
-            title: const Text("Female"),
-            value: "Female",
-            groupValue: _gender,
-            onChanged: (String? value) {
-              setState(() {
-                _gender = value;
-              });
-            },
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            "Cancel",
+            style: TextStyle(fontSize: AppConstants.fontSizeBody),
           ),
         ),
+        SizedBox(height: AppConstants.sectionSpacing),
       ],
     );
+  }
+
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppConstants.defaultPadding),
+      child: Column(children: _buildFormFields()),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppConstants.defaultPadding),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: AppConstants.formMaxWidth),
+          child: Column(
+            children: [
+              // Image picker centered at top
+              _buildImagePicker(),
+              SizedBox(height: AppConstants.sectionSpacing),
+
+              // Two-column layout for form fields
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left column - Personal Information
+                  Expanded(child: Column(children: _buildPersonalInfoFields())),
+
+                  SizedBox(width: AppConstants.sectionSpacing),
+
+                  // Right column - Employment Information
+                  Expanded(
+                    child: Column(children: _buildEmploymentInfoFields()),
+                  ),
+                ],
+              ),
+
+              // Training and Remarks (full width)
+              ..._buildAdditionalFields(),
+
+              // Action Buttons
+              _buildActionButtons(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFormFields() {
+    return [
+      _buildImagePicker(),
+      SizedBox(height: AppConstants.sectionSpacing),
+      ..._buildPersonalInfoFields(),
+      ..._buildEmploymentInfoFields(),
+      ..._buildAdditionalFields(),
+      _buildActionButtons(),
+    ];
+  }
+
+  List<Widget> _buildPersonalInfoFields() {
+    return [
+      _buildTextField(_fullNameController, "Full Name", "Mg Hla Mg"),
+      _buildGenderSelection(),
+      _buildTextField(_fatherNameController, "Father's Name", "U Hla"),
+      _buildTextField(_motherNameController, "Mother's Name", "eg. Daw Mya"),
+      _buildTextField(_nrcNumberController, "NRC Number", "12/KaMaNa(N)123456"),
+      _buildDateField(_dateOfBirthController, "Date of Birth", "DD/MM/YYYY", 0),
+      _buildTextField(_ageController, "Age", "e.g. 30", isReadOnly: true),
+      _buildDropdownFormField<String>(
+        hintText: "Select Education Level",
+        items: AppConstants.educationLevels,
+        value: _educationLevel,
+        onChanged: (value) => setState(() => _educationLevel = value),
+        displayString: (item) => item,
+      ),
+      _buildTextField(
+        _educationDescController,
+        "Education Description",
+        "eg. Secondary Passed",
+      ),
+      _buildDropdownFormField<String>(
+        hintText: "Select Blood Group",
+        items: AppConstants.bloodTypes,
+        value: _bloodType,
+        onChanged: (value) => setState(() => _bloodType = value),
+        displayString: (item) => item,
+      ),
+      _buildTextField(
+        _addressController,
+        "Address",
+        "eg. No . 1 U Ba Road Hinthaa",
+      ),
+    ];
+  }
+
+  List<Widget> _buildEmploymentInfoFields() {
+    return [
+      _buildDropdownFormField<String>(
+        hintText: "Select Assigned Branch",
+        items: AppConstants.assignedBranches,
+        value: _assignedBranch,
+        onChanged: (value) => setState(() => _assignedBranch = value),
+        displayString: (item) => item,
+      ),
+      _buildTextField(
+        _firstAssignedPositionController,
+        "First assigned Position",
+        "junior content writer",
+        suggestions: AppConstants.positionSuggestions,
+      ),
+      _buildDateField(
+        _firstAssignedDateController,
+        "First Assigned Date",
+        "DD/MM/YY",
+        1,
+      ),
+      _buildTextField(
+        _currentPositionController,
+        "Current Position",
+        "Senior Write",
+        suggestions: AppConstants.positionSuggestions,
+      ),
+      _buildDropdownFormField<String>(
+        hintText: "Select Salary Range",
+        items: AppConstants.salaryRanges,
+        value: _currentSalaryRange,
+        onChanged: (value) => setState(() => _currentSalaryRange = value),
+        displayString: (item) => item,
+      ),
+      _buildDateField(
+        _currentPositionAssignDateController,
+        "Current Position Assigned Date",
+        "MM/DD/YY",
+        2,
+      ),
+      _buildTextField(
+        _currentSalaryController,
+        "Current Salary",
+        "eg. 100000",
+        isNumber: true,
+      ),
+    ];
+  }
+
+  List<Widget> _buildAdditionalFields() {
+    return [
+      Padding(
+        padding: EdgeInsets.symmetric(vertical: AppConstants.fieldSpacing),
+        child: TrainingChipsInput(
+          onChipsChanged: _updateTrainingList,
+          initialCourses: _trainingCoursesList,
+        ),
+      ),
+      _buildTextField(_remarksController, "Remarks", "Any notes"),
+    ];
   }
 
   @override
@@ -517,159 +826,22 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("Edit Employee"),
+        title: Text(
+          "Edit Employee",
+          style: TextStyle(fontSize: AppConstants.fontSizeTitle),
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _updateEmployee),
+          if (AppConstants.isDesktop)
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: _updateEmployee,
+              tooltip: 'Save Changes',
+            ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Photo Upload
-            _buildImagePicker(),
-            const SizedBox(height: 20),
-
-            // Personal Details Section
-            _buildTextField(_fullNameController, "Full Name", "Mg Hla Mg"),
-            _buildGenderSelection(),
-            _buildTextField(_fatherNameController, "Father's Name", "U Hla"),
-            _buildTextField(
-              _motherNameController,
-              "Mother's Name",
-              "eg. Daw Mya",
-            ),
-            _buildTextField(
-              _nrcNumberController,
-              "NRC Number",
-              "12/KaMaNa(N)123456",
-            ),
-            _buildDateField(
-              _dateOfBirthController,
-              "Date of Birth",
-              "DD/MM/YYYY",
-              0,
-            ),
-            _buildTextField(_ageController, "Age", "e.g. 30", isReadOnly: true),
-
-            _buildDropdownFormField<String>(
-              hintText: "Select Education Level",
-              items: AppConstants.educationLevels,
-              value: _educationLevel,
-              onChanged: (value) => setState(() => _educationLevel = value),
-              displayString: (item) => item,
-            ),
-            _buildTextField(
-              _educationDescController,
-              "Education Description",
-              "eg. Secondary Passed",
-            ),
-            _buildDropdownFormField<String>(
-              hintText: "Select Blood Group",
-              items: AppConstants.bloodTypes,
-              value: _bloodType,
-              onChanged: (value) => setState(() => _bloodType = value),
-              displayString: (item) => item,
-            ),
-
-            _buildTextField(
-              _addressController,
-              "Address",
-              "eg. No . 1 U Ba Road Hinthaa",
-            ),
-
-            // Employment Details Section
-            _buildDropdownFormField<String>(
-              hintText: "Select Assigned Branch",
-              items: AppConstants.assignedBranches,
-              value: _assignedBranch,
-              onChanged: (value) => setState(() => _assignedBranch = value),
-              displayString: (item) => item,
-            ),
-
-            _buildTextField(
-              _firstAssignedPositionController,
-              "First assigned Position",
-              "junior content writer",
-              suggestions: AppConstants.positionSuggestions,
-            ),
-            _buildDateField(
-              _firstAssignedDateController,
-              "First Assigned Date",
-              "DD/MM/YY",
-              1,
-            ),
-            _buildTextField(
-              _currentPositionController,
-              "Current Position",
-              "Senior Write",
-              suggestions: AppConstants.positionSuggestions,
-            ),
-
-            _buildDropdownFormField<String>(
-              hintText: "Select Salary Range",
-              items: AppConstants.salaryRanges,
-              value: _currentSalaryRange,
-              onChanged: (value) => setState(() => _currentSalaryRange = value),
-              displayString: (item) => item,
-            ),
-
-            _buildDateField(
-              _currentPositionAssignDateController,
-              "Current Position Assigned Date",
-              "MM/DD/YY",
-              2,
-            ),
-            _buildTextField(
-              _currentSalaryController,
-              "Current Salary",
-              "eg. 100000",
-              isNumber: true,
-            ),
-
-            // Training Section
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: TrainingChipsInput(
-                onChipsChanged: _updateTrainingList,
-                initialCourses: _trainingCoursesList,
-              ),
-            ),
-
-            _buildTextField(_remarksController, "Remarks", "Any notes"),
-
-            // Action Buttons
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _updateEmployee,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
-                    child: const Text(
-                      "Update Employee",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cancel"),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+      body: AppConstants.isDesktop
+          ? _buildDesktopLayout()
+          : _buildMobileLayout(),
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// 2. UPDATE EMPLOYEE DETAIL SCREEN WITH EDIT FUNCTIONALITY
-// -----------------------------------------------------------------------------

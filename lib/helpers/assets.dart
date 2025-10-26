@@ -1,4 +1,22 @@
+import 'dart:io';
+
 class AppConstants {
+  static bool get isDesktop =>
+      Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+  static bool get isMobile => Platform.isAndroid || Platform.isIOS;
+
+  // Responsive spacing
+  static double get defaultPadding => isDesktop ? 24.0 : 16.0;
+  static double get fieldSpacing => isDesktop ? 16.0 : 12.0;
+  static double get sectionSpacing => isDesktop ? 32.0 : 20.0;
+  static double get imageSize => isDesktop ? 180.0 : 150.0;
+
+  // Font sizes
+  static double get fontSizeTitle => isDesktop ? 20.0 : 18.0;
+  static double get fontSizeBody => isDesktop ? 15.0 : 14.0;
+
+  // Layout
+  static double get formMaxWidth => isDesktop ? 800.0 : double.infinity;
   static const List<String> educationLevels = [
     "ဝိဇ္ဇာ",
     "သိပ္ပံ",
@@ -69,6 +87,6 @@ class AppConstants {
     "ဂိတ်စောင့်",
   ];
 
-  static const double defaultPadding = 16.0;
-  static const double fieldSpacing = 8.0;
+  // static const double defaultPadding = 16.0;
+  // static const double fieldSpacing = 8.0;
 }
