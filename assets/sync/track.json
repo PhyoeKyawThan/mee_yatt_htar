@@ -1,0 +1,56 @@
+[
+    {
+        "type": "update",
+        "data": {
+            "id": 3,
+            "fullName": "Kyaw Kyaw Mya",
+            "gender": "Male",
+            "fatherName": "asf",
+            "motherName": "asf",
+            "nrcNumber": "sgsdfg",
+            "dateOfBirth": "01/09/2016",
+            "age": 9,
+            "educationLevel": "အထက်တန်း",
+            "educationDesc": "fdgh",
+            "bloodType": "O-",
+            "address": "fghfgh",
+            "assignedBranch": "ရေကြည်",
+            "firstAssignedPosition": "asdf",
+            "firstAssignedDate": "29/09/2016",
+            "currentPosition": "sf",
+            "currentSalaryRange": "198000-2000-208000",
+            "currentPositionAssignDate": "21/09/2016",
+            "currentSalary": "565656",
+            "trainingCourses": "[\"dfh\",\"dfgh\"]",
+            "remarks": "fgh",
+            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png"
+        }
+    },
+    {
+        "type": "update",
+        "data": {
+            "id": 3,
+            "fullName": "Kyaw Kyaw Mya update",
+            "gender": "Male",
+            "fatherName": "asf",
+            "motherName": "asf",
+            "nrcNumber": "sgsdfg",
+            "dateOfBirth": "01/09/2016",
+            "age": 9,
+            "educationLevel": "အထက်တန်း",
+            "educationDesc": "fdgh",
+            "bloodType": "O-",
+            "address": "fghfgh",
+            "assignedBranch": "ရေကြည်",
+            "firstAssignedPosition": "asdf",
+            "firstAssignedDate": "29/09/2016",
+            "currentPosition": "sf",
+            "currentSalaryRange": "198000-2000-208000",
+            "currentPositionAssignDate": "21/09/2016",
+            "currentSalary": "565656",
+            "trainingCourses": "[\"dfh\",\"dfgh\"]",
+            "remarks": "fgh",
+            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png"
+        }
+    }
+]

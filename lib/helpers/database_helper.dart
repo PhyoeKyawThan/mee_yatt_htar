@@ -1,6 +1,7 @@
 // database_helper.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:mee_yatt_htar/helpers/change_tracker.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
@@ -152,11 +153,11 @@ class DatabaseHelper {
       )
     ''');
   }
-
   // --- Unified CRUD Operations ---
 
   // Insert an employee record
   Future<int> insertEmployee(Employee employee) async {
+    ChangeTracker.create({"type": "create", "data": employee.toMap()});
     if (isMobile) {
       return await _insertEmployeeSQLite(employee);
     } else {
@@ -166,6 +167,10 @@ class DatabaseHelper {
 
   // Delete an employee record
   Future<int> deleteEmployee(Employee employee) async {
+    ChangeTracker.create({
+      "type": "delete",
+      "data": {"id": employee.id},
+    });
     if (isMobile) {
       return await _deleteEmployeeSQLite(employee);
     } else {
@@ -193,6 +198,7 @@ class DatabaseHelper {
 
   // Update employee
   Future<int> updateEmployee(Employee employee) async {
+    ChangeTracker.create({"type": "update", "data": employee.toMap()});
     if (isMobile) {
       return await _updateEmployeeSQLite(employee);
     } else {

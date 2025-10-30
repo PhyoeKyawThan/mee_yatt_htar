@@ -1,20 +1,22 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:mee_yatt_htar/helpers/change_tracker.dart';
+import 'package:mee_yatt_htar/helpers/database_helper.dart';
 
 class SyncHelper {
   static final SyncHelper instance = SyncHelper._privateConstructor();
   SyncHelper._privateConstructor();
 
+  // =============================
   // Get local IP address
+  // =============================
   static Future<String?> getLocalIpAddress() async {
     try {
-      // For Android/iOS - get local IP from network interfaces
       final interfaces = await NetworkInterface.list();
 
       for (var interface in interfaces) {
         for (var addr in interface.addresses) {
-          // Prefer IPv4 and non-loopback addresses
           if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
             print(
               'Found local IP: ${addr.address} on interface: ${interface.name}',
@@ -24,7 +26,6 @@ class SyncHelper {
         }
       }
 
-      // Fallback: try to get IP from external service
       return await _getIpFromExternalService();
     } catch (e) {
       print('Error getting local IP: $e');
@@ -32,7 +33,9 @@ class SyncHelper {
     }
   }
 
-  // Get IP from external service as fallback
+  // =============================
+  // Get external IP (fallback)
+  // =============================
   static Future<String?> _getIpFromExternalService() async {
     try {
       final response = await http
@@ -48,11 +51,13 @@ class SyncHelper {
     return null;
   }
 
+  // =============================
   // Check if server is reachable
+  // =============================
   static Future<bool> isServerReachable(String serverUrl) async {
     try {
       final response = await http
-          .get(Uri.parse('$serverUrl/discover'))
+          .get(Uri.parse('$serverUrl/'))
           .timeout(Duration(seconds: 3));
 
       return response.statusCode == 200;
@@ -62,7 +67,9 @@ class SyncHelper {
     }
   }
 
-  // Get network segment for local scanning
+  // =============================
+  // Get network segment
+  // =============================
   static Future<String?> getNetworkSegment() async {
     try {
       final localIp = await getLocalIpAddress();
@@ -78,7 +85,9 @@ class SyncHelper {
     return null;
   }
 
+  // =============================
   // Scan local network for servers
+  // =============================
   static Future<List<String>> scanLocalNetwork({int timeoutMs = 500}) async {
     final List<String> foundServers = [];
     final networkSegment = await getNetworkSegment();
@@ -106,96 +115,62 @@ class SyncHelper {
     return foundServers;
   }
 
+  // =============================
+  // Internal: Check server
+  // =============================
   static Future<String?> _checkServerAtIp(String ip, int timeoutMs) async {
     try {
-      final url = 'http://$ip:5000/discover';
+      final url = 'http://$ip:5000/';
       final response = await http
           .get(Uri.parse(url))
           .timeout(Duration(milliseconds: timeoutMs));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['server_name'] == 'Employee File Server') {
+        if (data["acknowledgement"] == "open_sesame") {
           print('Found server at: $ip');
           return 'http://$ip:5000';
         }
       }
     } catch (e) {
-      // Ignore timeout and connection errors during scanning
+      // ignore connection errors
     }
     return null;
   }
 
-  // Test server connection with detailed info
-  static Future<Map<String, dynamic>> testServerConnection(
+  // =============================
+  // NEW METHOD: Send JSON to Server
+  // =============================
+  static Future<void> sendJsonToServer(
     String serverUrl,
+    // Map<String, dynamic> jsonData,
   ) async {
     try {
-      final stopwatch = Stopwatch()..start();
-      final response = await http
-          .get(Uri.parse('$serverUrl/discover'))
-          .timeout(Duration(seconds: 5));
-      stopwatch.stop();
+      List<Map<String, dynamic>> changes = await ChangeTracker.readAll();
+      Map<String, dynamic> jsonData = {
+        "device": Platform.isAndroid
+            ? "android"
+            : (Platform.isWindows ? "window" : "Linux"),
+        "changes": changes,
+      };
+      final response = await http.post(
+        Uri.parse('$serverUrl:5000/sync'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(jsonData),
+      );
+
+      print('➡️ Sending data to $serverUrl/sync ...');
+      print('📦 Payload: ${jsonEncode(jsonData)}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': true,
-          'serverUrl': serverUrl,
-          'serverName': data['server_name'],
-          'responseTime': '${stopwatch.elapsedMilliseconds}ms',
-          'timestamp': DateTime.now().toIso8601String(),
-        };
+        print('✅ Server Response: ${response.body}');
       } else {
-        return {
-          'success': false,
-          'error': 'HTTP ${response.statusCode}',
-          'serverUrl': serverUrl,
-        };
+        print(
+          '⚠️ Server responded with ${response.statusCode}: ${response.body}',
+        );
       }
     } catch (e) {
-      return {'success': false, 'error': e.toString(), 'serverUrl': serverUrl};
+      print('❌ Failed to send JSON data: $e');
     }
-  }
-
-  // Get network info summary
-  static Future<Map<String, dynamic>> getNetworkInfo() async {
-    final localIp = await getLocalIpAddress();
-    final networkSegment = await getNetworkSegment();
-
-    return {
-      'localIp': localIp,
-      'networkSegment': networkSegment,
-      'timestamp': DateTime.now().toIso8601String(),
-      'platform': Platform.operatingSystem,
-    };
-  }
-
-  // Simple network availability check
-  static Future<bool> hasNetworkConnection() async {
-    try {
-      // Try to connect to a reliable server
-      final response = await http
-          .get(Uri.parse('https://www.google.com'))
-          .timeout(Duration(seconds: 5));
-
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Get Wi-Fi SSID (Android only)
-  static Future<String?> getWifiSsid() async {
-    try {
-      if (Platform.isAndroid) {
-        // You would need the wifi_flutter package for this
-        // For now, return null
-        return null;
-      }
-    } catch (e) {
-      print('Error getting WiFi SSID: $e');
-    }
-    return null;
   }
 }

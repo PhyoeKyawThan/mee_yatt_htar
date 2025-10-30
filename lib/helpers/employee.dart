@@ -24,6 +24,8 @@ class Employee {
   final List<String> trainingCourses; // The List<String>
   final String? remarks;
   final String? imagePath; // Path to the stored image file
+  final String? createdAt;
+  final String? updatedAt;
 
   Employee({
     this.id,
@@ -48,6 +50,8 @@ class Employee {
     required this.trainingCourses,
     this.remarks,
     this.imagePath,
+    this.createdAt,
+    this.updatedAt,
   });
 
   // Convert an Employee object into a Map (for saving to DB)
@@ -76,6 +80,8 @@ class Employee {
       'trainingCourses': jsonEncode(trainingCourses),
       'remarks': remarks,
       'imagePath': imagePath,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
@@ -132,6 +138,8 @@ class Employee {
       trainingCourses: safeStringList(map['trainingCourses']),
       remarks: safeString(map['remarks']),
       imagePath: safeString(map['imagePath']),
+      createdAt: safeString(map['createdAt']),
+      updatedAt: safeString(map['updatedAt']),
     );
   }
 }
