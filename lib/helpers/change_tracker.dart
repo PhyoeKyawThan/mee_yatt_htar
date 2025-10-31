@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:mee_yatt_htar/helpers/assets.dart';
+
 class ChangeTracker {
   static const String _path = "assets/sync/track.json";
 
@@ -10,7 +12,12 @@ class ChangeTracker {
 
       if (!await file.exists()) {
         await file.create(recursive: true);
-        await file.writeAsString(jsonEncode([]));
+        await file.writeAsString(
+          jsonEncode({
+            "device": AppConstants.isMobile ? "mobile" : "desktop",
+            "changes": [],
+          }),
+        );
       }
 
       final contents = await file.readAsString();

@@ -4,6 +4,7 @@ import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:mee_yatt_htar/screens/edit_employee.dart';
+import 'package:sqflite/sqlite_api.dart';
 
 // -----------------------------------------------------------------------------
 // RESPONSIVE LAYOUT CONSTANTS
@@ -983,7 +984,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
         _isLoading = false;
       });
       _showError('Failed to load employees: $e');
-      print(stackTrace);
+      // print(stackTrace);
     }
   }
 
@@ -1065,7 +1066,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       MaterialPageRoute(
         builder: (context) => EmployeeDetailScreen(employee: employee),
       ),
-    );
+    ).then((_) => _loadEmployees());
   }
 
   Widget _buildSearchBar() {
@@ -1166,11 +1167,14 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
           return EmployeeListItem(
             employee: employee,
             onTap: () => _navigateToEmployeeDetail(employee),
-            onDelete: () {
+            onDelete: () async {
+              await DatabaseHelper.instance.deleteEmployee(employee);
+
               setState(() {
                 _filteredEmployees.removeAt(index);
               });
             },
+
             context: this.context,
           );
         },

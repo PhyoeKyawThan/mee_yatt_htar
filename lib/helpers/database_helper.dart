@@ -152,28 +152,35 @@ class DatabaseHelper {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     ''');
+    await conn.execute('''
+      CREATE TABLE IF NOT EXISTS changes(type ENUM('create', 'delete', 'update'),
+      emp_id INT, FOREIGN KEY(emp_id
+      ) REFERENCES employees(id))
+    ''');
   }
   // --- Unified CRUD Operations ---
 
   // Insert an employee record
   Future<int> insertEmployee(Employee employee) async {
-    ChangeTracker.create({"type": "create", "data": employee.toMap()});
     if (isMobile) {
+      ChangeTracker.create({"type": "create", "data": employee.toMap()});
       return await _insertEmployeeSQLite(employee);
     } else {
+      await _addChanges("create", employee);
       return await _insertEmployeeMySQL(employee);
     }
   }
 
   // Delete an employee record
   Future<int> deleteEmployee(Employee employee) async {
-    ChangeTracker.create({
-      "type": "delete",
-      "data": {"id": employee.id},
-    });
     if (isMobile) {
+      await ChangeTracker.create({
+        "type": "delete",
+        "data": {"id": employee.id},
+      });
       return await _deleteEmployeeSQLite(employee);
     } else {
+      await _addChanges("delete", employee);
       return await _deleteEmployeeMySQL(employee);
     }
   }
@@ -198,10 +205,11 @@ class DatabaseHelper {
 
   // Update employee
   Future<int> updateEmployee(Employee employee) async {
-    ChangeTracker.create({"type": "update", "data": employee.toMap()});
     if (isMobile) {
+      ChangeTracker.create({"type": "update", "data": employee.toMap()});
       return await _updateEmployeeSQLite(employee);
     } else {
+      await _addChanges("update", employee);
       return await _updateEmployeeMySQL(employee);
     }
   }
@@ -281,6 +289,24 @@ class DatabaseHelper {
     });
   }
 
+  // add changes
+  Future<int> _addChanges(String type, Employee employee) async {
+    final conn = await _initMySQLConnection();
+    final result = await conn.execute(
+      '''
+      INSERT INTO changes (
+       type, emp_id
+      ) VALUES (:type, :emp_id)
+      ''',
+      {'type': type, 'emp_id': employee.id},
+    );
+    return result.lastInsertID.toInt();
+  }
+
+  Future<void> cleanChanges() async {
+    final conn = await _initMySQLConnection();
+    await conn.execute("DELETE FROM changes");
+  }
   // --- MySQL-specific implementations ---
 
   Future<int> _insertEmployeeMySQL(Employee employee) async {
@@ -332,7 +358,6 @@ class DatabaseHelper {
     final result = await conn.execute('DELETE FROM employees WHERE id = :id', {
       "id": employee.id,
     });
-
     return result.affectedRows.toInt();
   }
 

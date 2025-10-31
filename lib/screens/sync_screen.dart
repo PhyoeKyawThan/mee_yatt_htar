@@ -15,8 +15,8 @@ class SyncScreen extends StatefulWidget {
 class _SyncScreen extends State<SyncScreen> {
   String _syncText = "This is default sync text";
   Future<void> _handleSync() async {
-    List<String> address = await SyncHelper.scanLocalNetwork();
-    SyncHelper.sendJsonToServer(address[0]);
+    String? address = await SyncHelper.getPythonSyncServer();
+    await SyncHelper.sendJsonToServer(address);
   }
 
   @override

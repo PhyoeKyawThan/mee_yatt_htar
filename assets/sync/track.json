@@ -3,7 +3,7 @@
         "type": "update",
         "data": {
             "id": 3,
-            "fullName": "Kyaw Kyaw Mya",
+            "fullName": "Kyaw",
             "gender": "Male",
             "fatherName": "asf",
             "motherName": "asf",
@@ -23,7 +23,38 @@
             "currentSalary": "565656",
             "trainingCourses": "[\"dfh\",\"dfgh\"]",
             "remarks": "fgh",
-            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png"
+            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png",
+            "createdAt": null,
+            "updatedAt": null
+        }
+    },
+    {
+        "type": "update",
+        "data": {
+            "id": 3,
+            "fullName": "Kyaw",
+            "gender": "Male",
+            "fatherName": "asf",
+            "motherName": "asf",
+            "nrcNumber": "sgsdfg",
+            "dateOfBirth": "01/09/2016",
+            "age": 9,
+            "educationLevel": "အထက်တန်း",
+            "educationDesc": "fdgh",
+            "bloodType": "O-",
+            "address": "fghfgh",
+            "assignedBranch": "ရေကြည်",
+            "firstAssignedPosition": "asdf",
+            "firstAssignedDate": "29/09/2016",
+            "currentPosition": "sf",
+            "currentSalaryRange": "198000-2000-208000",
+            "currentPositionAssignDate": "21/09/2016",
+            "currentSalary": "565656",
+            "trainingCourses": "[\"dfh\",\"dfgh\"]",
+            "remarks": "fgh",
+            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png",
+            "createdAt": null,
+            "updatedAt": null
         }
     },
     {
@@ -50,7 +81,91 @@
             "currentSalary": "565656",
             "trainingCourses": "[\"dfh\",\"dfgh\"]",
             "remarks": "fgh",
-            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png"
+            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png",
+            "createdAt": null,
+            "updatedAt": null
+        }
+    },
+    {
+        "type": "update",
+        "data": {
+            "id": 3,
+            "fullName": "Kyaw=",
+            "gender": "Male",
+            "fatherName": "asf",
+            "motherName": "asf",
+            "nrcNumber": "sgsdfg",
+            "dateOfBirth": "01/09/2016",
+            "age": 9,
+            "educationLevel": "အထက်တန်း",
+            "educationDesc": "fdgh",
+            "bloodType": "O-",
+            "address": "fghfgh",
+            "assignedBranch": "ရေကြည်",
+            "firstAssignedPosition": "asdf",
+            "firstAssignedDate": "29/09/2016",
+            "currentPosition": "sf",
+            "currentSalaryRange": "198000-2000-208000",
+            "currentPositionAssignDate": "21/09/2016",
+            "currentSalary": "565656",
+            "trainingCourses": "[\"dfh\",\"dfgh\"]",
+            "remarks": "fgh",
+            "imagePath": "/home/phyoekyawthan/Documents/1761726040744_asdfsd.png",
+            "createdAt": null,
+            "updatedAt": null
+        }
+    },
+    {
+        "type": "delete",
+        "data": {
+            "id": 4
+        }
+    },
+    {
+        "type": "delete",
+        "data": {
+            "id": 2
+        }
+    },
+    {
+        "type": "delete",
+        "data": {
+            "id": 1
+        }
+    },
+    {
+        "type": "delete",
+        "data": {
+            "id": 3
+        }
+    },
+    {
+        "type": "create",
+        "data": {
+            "id": null,
+            "fullName": "Mg Mya",
+            "gender": "Male",
+            "fatherName": "dfghdfgh",
+            "motherName": "dfghdfgh",
+            "nrcNumber": "12/LaMaNa(N)120120",
+            "dateOfBirth": "08/10/2002",
+            "age": 23,
+            "educationLevel": "အထက်တန်း",
+            "educationDesc": "asdf",
+            "bloodType": "B-",
+            "address": "asdf",
+            "assignedBranch": "ရေကြည်",
+            "firstAssignedPosition": "dfghfdgh",
+            "firstAssignedDate": "03/10/2025",
+            "currentPosition": "dfghdfgh",
+            "currentSalaryRange": "234000-2000-224000",
+            "currentPositionAssignDate": "30/10/2025",
+            "currentSalary": "213123",
+            "trainingCourses": "[\"asdf\"]",
+            "remarks": "asdf",
+            "imagePath": "/home/phyoekyawthan/Documents/1761817828765_Mg_Mya.png",
+            "createdAt": null,
+            "updatedAt": null
         }
     }
 ]

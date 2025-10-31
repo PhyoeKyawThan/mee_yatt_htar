@@ -128,13 +128,34 @@ class SyncHelper {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["acknowledgement"] == "open_sesame") {
-          print('Found server at: $ip');
-          return 'http://$ip:5000';
+          final serverUrl = data["url"] ?? 'http://$ip:5000';
+          print('✅ Found Python Sync Server at: $serverUrl');
+          return serverUrl;
         }
       }
     } catch (e) {
-      // ignore connection errors
+      // Ignore connection errors
     }
+    return null;
+  }
+
+  static Future<String?> getPythonSyncServer() async {
+    print('🔍 Searching for Python Sync Server...');
+    final servers = await scanLocalNetwork(timeoutMs: 1000);
+    if (servers.isEmpty) {
+      print('❌ No Python server found on the local network.');
+      return null;
+    }
+
+    // Optional: verify which one is reachable
+    for (final server in servers) {
+      if (await isServerReachable(server)) {
+        print('🌐 Using sync server: $server');
+        return server;
+      }
+    }
+
+    print('❌ No reachable server responded.');
     return null;
   }
 
@@ -142,7 +163,7 @@ class SyncHelper {
   // NEW METHOD: Send JSON to Server
   // =============================
   static Future<void> sendJsonToServer(
-    String serverUrl,
+    String? serverUrl,
     // Map<String, dynamic> jsonData,
   ) async {
     try {
@@ -154,7 +175,7 @@ class SyncHelper {
         "changes": changes,
       };
       final response = await http.post(
-        Uri.parse('$serverUrl:5000/sync'),
+        Uri.parse('$serverUrl/sync'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(jsonData),
       );
