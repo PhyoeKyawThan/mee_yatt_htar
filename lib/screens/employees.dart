@@ -1169,7 +1169,6 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             onTap: () => _navigateToEmployeeDetail(employee),
             onDelete: () async {
               await DatabaseHelper.instance.deleteEmployee(employee);
-
               setState(() {
                 _filteredEmployees.removeAt(index);
               });

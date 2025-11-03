@@ -64,9 +64,19 @@ class DatabaseHelper {
         currentSalary TEXT,
         trainingCourses TEXT, -- Stored as a JSON string
         remarks TEXT,
-        imagePath TEXT
+        imagePath TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     ''');
+    await db.execute('''
+        CREATE TRIGGER update_employee_timestamp
+        AFTER UPDATE ON employees
+        FOR EACH ROW
+        BEGIN
+          UPDATE employees SET updatedAt = CURRENT_TIMESTAMP WHERE id = OLD.id;
+        END;
+      ''');
   }
 
   Future<MySQLConnection> _initMySQLConnection({int retryCount = 2}) async {
@@ -148,14 +158,16 @@ class DatabaseHelper {
         trainingCourses TEXT,
         remarks TEXT,
         imagePath TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     ''');
     await conn.execute('''
-      CREATE TABLE IF NOT EXISTS changes(type ENUM('create', 'delete', 'update'),
-      emp_id INT, FOREIGN KEY(emp_id
-      ) REFERENCES employees(id))
+      CREATE TABLE IF NOT EXISTS changes(
+        id INT AUTO_INCREMENT PRIMARY KEY, 
+        type ENUM('create', 'delete', 'update'),
+        emp_id INT NOT NULL
+      )
     ''');
   }
   // --- Unified CRUD Operations ---
@@ -287,6 +299,20 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) {
       return Employee.fromMap(maps[i]);
     });
+  }
+
+  Future<List<Map<String, dynamic>>> getChanges() async {
+    final conn = await _initMySQLConnection();
+    final result = await conn.execute(
+      'SELECT emp.* FROM changes as c LEFT JOIN employees as emp ON emp.id = c.emp_id',
+    );
+    List<Employee> employees = result.rows.map(_rowToEmployee).toList();
+    // print(employees[0].id);
+    List<Map<String, dynamic>> changes = [];
+    for (Employee e in employees) {
+      changes.add(e.toMap());
+    }
+    return changes;
   }
 
   // add changes
@@ -466,6 +492,8 @@ class DatabaseHelper {
       'trainingCourses': row.colByName('trainingCourses'),
       'remarks': row.colByName('remarks'),
       'imagePath': row.colByName('imagePath'),
+      'createdAt': row.colByName('createdAt'),
+      'updatedAt': row.colByName('updatedAt'),
     });
   }
 

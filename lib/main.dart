@@ -33,7 +33,7 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    return AppConstants.isMobile
+    return AppConstants.isMobile || AppConstants.isDesktop
         ? Scaffold(
             appBar: null,
             body: _screens[_currentOpenedIndex],

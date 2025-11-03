@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/change_tracker.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
+import 'package:mee_yatt_htar/helpers/file_uploader.dart';
 
 class SyncHelper {
   static final SyncHelper instance = SyncHelper._privateConstructor();
@@ -164,34 +166,56 @@ class SyncHelper {
   // =============================
   static Future<void> sendJsonToServer(
     String? serverUrl,
+    // String? fileServerUrl,
     // Map<String, dynamic> jsonData,
   ) async {
-    try {
-      List<Map<String, dynamic>> changes = await ChangeTracker.readAll();
-      Map<String, dynamic> jsonData = {
-        "device": Platform.isAndroid
-            ? "android"
-            : (Platform.isWindows ? "window" : "Linux"),
-        "changes": changes,
-      };
-      final response = await http.post(
-        Uri.parse('$serverUrl/sync'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(jsonData),
-      );
-
-      print('➡️ Sending data to $serverUrl/sync ...');
-      print('📦 Payload: ${jsonEncode(jsonData)}');
-
-      if (response.statusCode == 200) {
-        print('✅ Server Response: ${response.body}');
-      } else {
-        print(
-          '⚠️ Server responded with ${response.statusCode}: ${response.body}',
-        );
-      }
-    } catch (e) {
-      print('❌ Failed to send JSON data: $e');
+    // try {
+    List<Map<String, dynamic>> changes = AppConstants.isMobile
+        ? await ChangeTracker.readAll()
+        : await DatabaseHelper.instance.getChanges();
+    ;
+    Map<String, dynamic> jsonData = {
+      "device": Platform.isAndroid
+          ? "android"
+          : (Platform.isWindows ? "Window" : "Linux"),
+      "changes": changes,
+      // "file_server": {"url": fileServerUrl},
+    };
+    List<String> images = [];
+    for (var e in changes) {
+      images.add(e['imagePath']);
     }
+    // changes.map((data) {
+    // if (data['imagePath'] && data['imagePath'] != null) {
+    // images.add(data['imagePath']);
+    // }
+    // });
+    await uploadMultipleFiles(
+      images,
+      jsonData,
+      serverUrl,
+      // isJsonFilePath: true,
+    );
+    //   final response = await http.post(
+    //     Uri.parse('$serverUrl/sync'),
+    //     headers: {'Content-Type': 'application/json'},
+    //     body: jsonEncode(jsonData),
+    //   );
+
+    //   print('➡️ Sending data to $serverUrl/sync ...');
+    //   print('📦 Payload: ${jsonEncode(jsonData)}');
+
+    //   if (response.statusCode == 200) {
+    //     await ChangeTracker.clear();
+    //     await DatabaseHelper.instance.cleanChanges();
+    //     print('✅ Server Response: ${response.body}');
+    //   } else {
+    //     print(
+    //       '⚠️ Server responded with ${response.statusCode}: ${response.body}',
+    //     );
+    //   }
+    // } catch (e) {
+    //   print('❌ Failed to send JSON data: $e');
+    // }
   }
 }

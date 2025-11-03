@@ -1,9 +1,8 @@
-// import 'dart:nativewrappers/_internal/vm/bin/vmservice_io.dart';
-
 import 'package:flutter/material.dart';
-import 'package:mee_yatt_htar/helpers/database_helper.dart';
+// import 'package:mee_yatt_htar/helpers/assets.dart';
+// import 'package:mee_yatt_htar/helpers/file_server.dart';
+// import 'package:mee_yatt_htar/helpers/file_uploader.dart';
 import 'package:mee_yatt_htar/helpers/sync_helper.dart';
-import 'package:sqflite/sqflite.dart';
 
 class SyncScreen extends StatefulWidget {
   const SyncScreen({super.key});
@@ -15,6 +14,8 @@ class SyncScreen extends StatefulWidget {
 class _SyncScreen extends State<SyncScreen> {
   String _syncText = "This is default sync text";
   Future<void> _handleSync() async {
+    // FileServer fs = FileServer();
+    // String? fileServerURL = await fs.start();
     String? address = await SyncHelper.getPythonSyncServer();
     await SyncHelper.sendJsonToServer(address);
   }
