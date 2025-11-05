@@ -1,10 +1,11 @@
 from .tracker import Tracker
 from models import db, Employee
 from datetime import datetime
-
+import os
+from werkzeug.datastructures import FileStorage
 class Sync(Tracker):
-    def __init__(self, changed_data):
-        super().__init__(changed_data)
+    def __init__(self, changed_data: dict, images: list[FileStorage], upload_dir: str) -> None:
+        super().__init__(changed_data, images, upload_dir)
     
     def apply_changes(self) -> bool:
         for type in self.separated_data.keys():
@@ -31,6 +32,10 @@ class Sync(Tracker):
             db.session.commit()
         
     def _do_create(self, employee_data: dict) -> None:
+        for image in self.images:
+            if image.filename == os.path.basename(employee_data['imagePath']):
+                image.save(os.path.join(self.UPLOAD_DIR, image.filename))
+                break
         db.session.add(self._convert_to_obj(employee_data))
         db.session.commit()
     
@@ -64,6 +69,11 @@ class Sync(Tracker):
         # emp.syncId = employee_data.get("syncId", emp.syncId)
         emp.updatedAt = datetime.utcnow()
         
+        # if(os.path.exists(os.path.join(self.UPLOAD_DIR, employee_data.get('imagePath'))) == False):
+        for image in self.images:
+            if image.filename == os.path.basename(employee_data['imagePath']):
+                image.save(os.path.join(self.UPLOAD_DIR, image.filename))
+                break
         db.session.commit()
         
     def _convert_to_obj(self, employee: dict) -> "Employee":

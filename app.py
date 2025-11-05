@@ -18,7 +18,9 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 raw_password = "domak90@"
 PASSWORD = urllib.parse.quote_plus(raw_password)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://domak:{PASSWORD}@127.0.0.1/employee_records"
-db.init_app(app = app)
+with app.app_context():
+    db.init_app(app = app)
+
 
 @app.route("/")
 def home() -> Response:
@@ -34,16 +36,24 @@ def home() -> Response:
         "url": request.host_url.rstrip('/')
     }), 200
     
-@app.route("/check_data", methods=['POST'])
-def check_data():
+@app.route("/make_sync", methods=['POST'])
+def make_sync():
     if request.method == "POST":
         images = request.files.getlist('files[]')
         json_path = request.files.get('json_data')
-        print(images)
+        # print(json_path.read())
+        if json_path:
+            changes_data = json.loads(json_path.read())
+            sync = Sync(changes_data, images, app.config['UPLOAD_DIR'])
+            sync.apply_changes()
+            return jsonify({
+                "images_len": len(images),
+                "json_file": changes_data
+            })
         return jsonify({
-            "images_len": len(images),
-            # "json_file": changing_data
-        })
+            "message": "Json file didn't provided",
+            "status": False
+        }), 400
     return jsonify({
         "message": "Method Not Allowed",
         "status": False
