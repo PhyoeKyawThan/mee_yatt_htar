@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, request, Response, send_file, send_from_directory
 from models import db, Employee, Change
+from sqlalchemy import select
+from typing import Sequence
 import json
 import urllib.parse
 from helpers import Sync
@@ -21,12 +23,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://domak:{PASSWORD}@127.0
 with app.app_context():
     db.init_app(app = app)
 
+def toDictObject(changes: Sequence[Change]) -> list[dict]:
+    changes_list: list[dict] = []
+    for ch in changes:
+        changes_list.append(ch.to_dict())
+    return changes_list
 
 @app.route("/")
 def home() -> Response:
-    change: Change = Change.query.get(1)
-    if change:
-        print(change.to_dict())
     return jsonify({
         "status" : True,
         "message": "Hi",
@@ -38,18 +42,32 @@ def home() -> Response:
     
 @app.route("/make_sync", methods=['POST'])
 def make_sync():
+    # changes from mysql db
+    mysql_changes = db.session.execute(select(Change)).scalars().all()
     if request.method == "POST":
         images = request.files.getlist('files[]')
         json_path = request.files.get('json_data')
         # print(json_path.read())
-        if json_path:
+        if json_path and json_path.content_length > 0:
             changes_data = json.loads(json_path.read())
+            # print(changes_data)
             sync = Sync(changes_data, images, app.config['UPLOAD_DIR'])
             sync.apply_changes()
             return jsonify({
-                "images_len": len(images),
-                "json_file": changes_data
-            })
+                "status": True,
+                "data_provided_from_android": True,
+                "has_also_changes": len(mysql_changes) > 0,
+                "changes": toDictObject(mysql_changes)
+            }), 200
+        if len(mysql_changes) > 0:
+            db.session.query(Change).delete()
+            db.session.commit()
+            return jsonify({
+                "status": True,
+                "data_provided_from_android": False,
+                "has_changes": len(mysql_changes) > 0,
+                "changes": toDictObject(mysql_changes)
+            }), 200
         return jsonify({
             "message": "Json file didn't provided",
             "status": False

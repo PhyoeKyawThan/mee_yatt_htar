@@ -1,5 +1,6 @@
 from .tracker import Tracker
-from models import db, Employee
+from models import db, Employee, Change
+from sqlalchemy import select
 from datetime import datetime
 import os
 from werkzeug.datastructures import FileStorage
@@ -38,7 +39,15 @@ class Sync(Tracker):
                 break
         db.session.add(self._convert_to_obj(employee_data))
         db.session.commit()
-    
+        
+    # def _check_conflict(self) -> Employee | None:
+    #     changes = db.session.execute(select(Change).filter(Change.type == "update")).scalars().all()
+    #     if changes:
+    #         for ch in changes:
+    #             for temp in self.separated_data['update']:
+    #                 if ch.emp_id == temp.emp_id:
+                        
+    #     return Employee()
     def _do_update(self, employee_data: dict) -> None:
         emp = Employee.query.get(employee_data.get('id'))
         if not emp:
