@@ -8,6 +8,7 @@ import 'package:mee_yatt_htar/helpers/database_helper.dart';
 // import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:path/path.dart'; // For basename
 import 'package:http_parser/http_parser.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart'; // For MediaType
 
 Future<void> uploadMultipleFiles(
@@ -20,10 +21,10 @@ Future<void> uploadMultipleFiles(
       : "http://127.0.0.1:5000/make_sync";
   var uri = Uri.parse(serverUrl);
   var request = http.MultipartRequest("POST", uri);
-
+  final dir = await getApplicationDocumentsDirectory();
   // --- Add multiple image or file uploads ---
   for (String filePath in filePaths) {
-    File file = File(filePath);
+    File file = File("${dir.path}/$filePath");
     // print("Changes" + changes);
     if (await file.exists()) {
       var stream = http.ByteStream(file.openRead());
