@@ -4,7 +4,9 @@ import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:mee_yatt_htar/screens/edit_employee.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqlite_api.dart';
+import 'package:path/path.dart' as path;
 
 // -----------------------------------------------------------------------------
 // RESPONSIVE LAYOUT CONSTANTS
@@ -29,11 +31,13 @@ class LayoutConstants {
 class EmployeeDetailScreen extends StatelessWidget {
   final Employee employee;
   final Function()? onEmployeeUpdated;
+  final String? imagePath;
 
   const EmployeeDetailScreen({
     super.key,
     required this.employee,
     this.onEmployeeUpdated,
+    this.imagePath,
   });
 
   Future<void> _refreshEmployeeData(BuildContext context) async {
@@ -49,6 +53,10 @@ class EmployeeDetailScreen extends StatelessWidget {
             builder: (context) => EmployeeDetailScreen(
               employee: updatedEmployee,
               onEmployeeUpdated: onEmployeeUpdated,
+              imagePath: path.join(
+                path.dirname("$imagePath"),
+                updatedEmployee.imagePath,
+              ),
             ),
           ),
         );
@@ -82,7 +90,8 @@ class EmployeeDetailScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditEmployeeScreen(employee: employee),
+        builder: (context) =>
+            EditEmployeeScreen(employee: employee, imagePath: imagePath),
       ),
     ).then((result) {
       if (result == true) {
@@ -301,7 +310,7 @@ class EmployeeDetailScreen extends StatelessWidget {
           children: [
             _buildProfileImage(),
             SizedBox(height: 20),
-            _buildBasicInfoSection(),
+            // _buildBasicInfoSection(),
             SizedBox(height: 20),
             _buildSectionHeader('Personal Information'),
             _buildInfoRow('Full Name', employee.fullName),
@@ -392,7 +401,7 @@ class EmployeeDetailScreen extends StatelessWidget {
         radius: LayoutConstants.avatarRadius,
         backgroundColor: Colors.grey.shade200,
         backgroundImage: employee.imagePath != null
-            ? FileImage(File(employee.imagePath!)) as ImageProvider
+            ? FileImage(File("$imagePath")) as ImageProvider
             : const AssetImage('assets/default_avatar.png'),
         child: employee.imagePath == null
             ? Icon(
@@ -585,12 +594,14 @@ class EmployeeListItem extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final BuildContext context;
+  final String? imageDir;
   const EmployeeListItem({
     super.key,
     required this.employee,
     required this.onTap,
     required this.onDelete,
     required this.context,
+    required this.imageDir,
   });
 
   @override
@@ -601,6 +612,7 @@ class EmployeeListItem extends StatelessWidget {
   }
 
   Widget _buildDesktopItem(BuildContext context) {
+    String _imagePath = "$imageDir/${employee.imagePath}";
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: ListTile(
@@ -608,7 +620,7 @@ class EmployeeListItem extends StatelessWidget {
           radius: 28,
           backgroundColor: Colors.grey.shade200,
           backgroundImage: employee.imagePath != null
-              ? FileImage(File(employee.imagePath!)) as ImageProvider
+              ? FileImage(File(_imagePath)) as ImageProvider
               : const AssetImage('assets/default_avatar.png'),
           child: employee.imagePath == null
               ? const Icon(Icons.person, color: Colors.grey)
@@ -660,6 +672,7 @@ class EmployeeListItem extends StatelessWidget {
   }
 
   Widget _buildMobileItem(BuildContext context) {
+    String _imagePath = "$imageDir/${employee.imagePath}";
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: ListTile(
@@ -667,7 +680,7 @@ class EmployeeListItem extends StatelessWidget {
           radius: 25,
           backgroundColor: Colors.grey.shade200,
           backgroundImage: employee.imagePath != null
-              ? FileImage(File(employee.imagePath!)) as ImageProvider
+              ? FileImage(File(_imagePath)) as ImageProvider
               : const AssetImage('assets/default_avatar.png'),
           child: employee.imagePath == null
               ? const Icon(Icons.person, color: Colors.grey)
@@ -957,10 +970,12 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   final TextEditingController _searchController = TextEditingController();
   FilterOptions _currentFilters = FilterOptions();
   bool _isLoading = true;
+  Directory? _imageDir;
 
   @override
   void initState() {
     super.initState();
+    _getImageDir();
     _loadEmployees();
     _searchController.addListener(_onSearchChanged);
   }
@@ -969,6 +984,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _getImageDir() async {
+    _imageDir = await getApplicationDocumentsDirectory();
+    setState(() {});
   }
 
   Future<void> _loadEmployees() async {
@@ -1061,10 +1081,13 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   }
 
   void _navigateToEmployeeDetail(Employee employee) {
+    String? path = _imageDir?.path;
+    String imagePath = "$path/${employee.imagePath}";
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EmployeeDetailScreen(employee: employee),
+        builder: (context) =>
+            EmployeeDetailScreen(employee: employee, imagePath: imagePath),
       ),
     ).then((_) => _loadEmployees());
   }
@@ -1175,6 +1198,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             },
 
             context: this.context,
+            imageDir: _imageDir?.path,
           );
         },
       ),

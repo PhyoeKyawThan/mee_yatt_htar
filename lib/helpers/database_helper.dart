@@ -1,6 +1,7 @@
 // database_helper.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/change_tracker.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:http/http.dart' as http;
@@ -77,6 +78,13 @@ class DatabaseHelper {
           UPDATE employees SET updatedAt = CURRENT_TIMESTAMP WHERE id = OLD.id;
         END;
       ''');
+    await db.execute('''
+      CREATE TABLE changes(
+        id INT AUTO_INCREMENT PRIMARY KEY, 
+        type VARCHAR(7) NOT NULL,
+        emp_id INT NOT NULL
+      )
+    ''');
   }
 
   Future<MySQLConnection> _initMySQLConnection({int retryCount = 2}) async {
@@ -175,21 +183,21 @@ class DatabaseHelper {
   // Insert an employee record
   Future<int> insertEmployee(Employee employee) async {
     if (isMobile) {
-      ChangeTracker.create({"type": "create", "data": employee.toMap()});
-      return await _insertEmployeeSQLite(employee);
+      int emp_id = await _insertEmployeeSQLite(employee);
+      employee.id = emp_id;
+      return await _addChangesSqlite("create", employee);
     } else {
       await _addChanges("create", employee);
-      return await _insertEmployeeMySQL(employee);
+      int emp_id = await _insertEmployeeMySQL(employee);
+      employee.id = emp_id;
+      return await _addChanges("changes", employee);
     }
   }
 
   // Delete an employee record
   Future<int> deleteEmployee(Employee employee) async {
     if (isMobile) {
-      await ChangeTracker.create({
-        "type": "delete",
-        "data": {"id": employee.id},
-      });
+      await _addChangesSqlite("delete", employee);
       return await _deleteEmployeeSQLite(employee);
     } else {
       await _addChanges("delete", employee);
@@ -218,7 +226,7 @@ class DatabaseHelper {
   // Update employee
   Future<int> updateEmployee(Employee employee) async {
     if (isMobile) {
-      ChangeTracker.create({"type": "update", "data": employee.toMap()});
+      await _addChangesSqlite("update", employee);
       return await _updateEmployeeSQLite(employee);
     } else {
       await _addChanges("update", employee);
@@ -303,16 +311,77 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getChanges() async {
     final conn = await _initMySQLConnection();
-    final result = await conn.execute(
-      'SELECT emp.* FROM changes as c LEFT JOIN employees as emp ON emp.id = c.emp_id',
+    final changes = await conn.execute("SELECT * FROM changes");
+
+    List<Map<String, dynamic>> changes_ = await Future.wait(
+      changes.rows.map((row) async {
+        int? empId = int.tryParse(row.colByName("emp_id") ?? '0');
+        if (empId != null && empId > 0) {
+          final result = await conn.execute(
+            'SELECT emp.* FROM changes as c '
+            'LEFT JOIN employees as emp ON emp.id = c.emp_id '
+            'WHERE c.emp_id = $empId',
+          );
+          return {
+            "type": row.colByName("type"),
+            "data":
+                row.colByName("type") == "create" ||
+                    row.colByName("type") == "update"
+                ? _rowToEmployee(result.rows.first).toMap()
+                : {
+                    {"id": empId},
+                  },
+          };
+        } else {
+          return {"type": null, "data": null};
+        }
+      }),
     );
-    List<Employee> employees = result.rows.map(_rowToEmployee).toList();
-    // print(employees[0].id);
-    List<Map<String, dynamic>> changes = [];
-    for (Employee e in employees) {
-      changes.add(e.toMap());
+    return changes_;
+  }
+
+  Future<List<Map<String, dynamic>>> getChangeSqlite() async {
+    final db = await _initSQLiteDatabase();
+
+    // Fetch all change records
+    final List<Map<String, dynamic>> changes = await db.query("changes");
+
+    // Process each change record
+    List<Map<String, dynamic>> changes_ = [];
+
+    for (final row in changes) {
+      final empId = row["emp_id"] as int?;
+      final type = row["type"] as String?;
+
+      if (empId != null && empId > 0) {
+        final List<Map<String, dynamic>> result = await db.rawQuery(
+          '''
+        SELECT emp.* 
+        FROM changes AS c 
+        LEFT JOIN employees AS emp ON emp.id = c.emp_id 
+        WHERE c.emp_id = ?
+      ''',
+          [empId],
+        );
+
+        Map<String, dynamic> employeeData = {};
+
+        if (type == "create" || type == "update") {
+          if (result.isNotEmpty) {
+            employeeData = result.first;
+            // employeeData = _rowToEmployee().toMap();
+          }
+        } else {
+          employeeData = {"id": empId};
+        }
+
+        changes_.add({"type": type, "data": employeeData});
+      } else {
+        changes_.add({"type": null, "data": null});
+      }
     }
-    return changes;
+
+    return changes_;
   }
 
   // add changes
@@ -329,8 +398,22 @@ class DatabaseHelper {
     return result.lastInsertID.toInt();
   }
 
+  Future<int> _addChangesSqlite(String type, Employee employee) async {
+    final conn = await _initSQLiteDatabase();
+    final result = await conn.insert("changes", {
+      "type": type,
+      "emp_id": employee.id,
+    });
+    return result;
+  }
+
   Future<void> cleanChanges() async {
     final conn = await _initMySQLConnection();
+    await conn.execute("DELETE FROM changes");
+  }
+
+  Future<void> cleanChangesSqlite() async {
+    final conn = await _initSQLiteDatabase();
     await conn.execute("DELETE FROM changes");
   }
   // --- MySQL-specific implementations ---

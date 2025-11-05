@@ -8,14 +8,20 @@ import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mee_yatt_htar/screens/subs/autocomplete.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 // -----------------------------------------------------------------------------
 // 1. EDIT EMPLOYEE SCREEN - RESPONSIVE
 // -----------------------------------------------------------------------------
 class EditEmployeeScreen extends StatefulWidget {
   final Employee employee;
+  final String? imagePath;
 
-  const EditEmployeeScreen({super.key, required this.employee});
+  const EditEmployeeScreen({
+    super.key,
+    required this.employee,
+    required this.imagePath,
+  });
 
   @override
   State<EditEmployeeScreen> createState() => _EditEmployeeScreenState();
@@ -118,9 +124,9 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     _remarksController.text = employee.remarks ?? '';
 
     // Image
-    _originalImagePath = employee.imagePath;
+    _originalImagePath = widget.imagePath;
     if (employee.imagePath != null) {
-      _imageFile = File(employee.imagePath!);
+      _imageFile = File(widget.imagePath!);
     }
 
     // Parse dates if they exist
@@ -289,7 +295,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
           '${DateTime.now().millisecondsSinceEpoch}_${_fullNameController.text.replaceAll(' ', '_')}.png';
       final newPath = '${directory.path}/$fileName';
       final File newImage = await imageFile.copy(newPath);
-      return newImage.path;
+      return path.basename(newImage.path);
     } catch (e) {
       print('Error saving image: $e');
       return _originalImagePath;
@@ -375,7 +381,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       if (_imageFile != null && _imageFile!.path != _originalImagePath) {
         finalImagePath = await _saveImagePermanently(_imageFile!);
       } else {
-        finalImagePath = _originalImagePath;
+        finalImagePath = path.basename("$_originalImagePath");
       }
 
       // Create the updated Employee object
@@ -403,6 +409,8 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         remarks: _remarksController.text.trim(),
         imagePath: finalImagePath,
       );
+
+      // print("Image $finalImagePath");
 
       // Update in the database
       final rowsAffected = await DatabaseHelper.instance.updateEmployee(

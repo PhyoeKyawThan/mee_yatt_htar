@@ -7,6 +7,7 @@ import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:mee_yatt_htar/screens/subs/autocomplete.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 // -----------------------------------------------------------------------------
 // 1. TRAINING CHIPS INPUT WIDGET - RESPONSIVE
@@ -303,7 +304,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
           '${DateTime.now().millisecondsSinceEpoch}_${_fullNameController.text.replaceAll(' ', '_')}.png';
       final newPath = '${directory.path}/$fileName';
       final File newImage = await imageFile.copy(newPath);
-      return newImage.path;
+      return path.basename(newImage.path);
     } catch (e) {
       print('Error saving image: $e');
       return null;

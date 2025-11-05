@@ -5,6 +5,7 @@ import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/change_tracker.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/file_uploader.dart';
+import 'package:sqflite/sqlite_api.dart';
 
 class SyncHelper {
   static final SyncHelper instance = SyncHelper._privateConstructor();
@@ -171,7 +172,7 @@ class SyncHelper {
   ) async {
     // try {
     List<Map<String, dynamic>> changes = AppConstants.isMobile
-        ? await ChangeTracker.readAll()
+        ? await DatabaseHelper.instance.getChangeSqlite()
         : await DatabaseHelper.instance.getChanges();
     ;
     Map<String, dynamic> jsonData = {
@@ -183,18 +184,21 @@ class SyncHelper {
     };
     List<String> images = [];
     for (var e in changes) {
-      images.add(e['imagePath']);
+      if (e['type'] != null) {
+        images.add(e['data']['imagePath']);
+      }
     }
     // changes.map((data) {
     // if (data['imagePath'] && data['imagePath'] != null) {
     // images.add(data['imagePath']);
     // }
     // });
+    // DatabaseHelper.instance.cleanChangesSqlite();
     await uploadMultipleFiles(
       images,
       jsonData,
       serverUrl,
-      // isJsonFilePath: true,
+      //   // isJsonFilePath: true,
     );
     //   final response = await http.post(
     //     Uri.parse('$serverUrl/sync'),

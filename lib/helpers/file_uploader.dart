@@ -4,8 +4,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
+// import 'package:mee_yatt_htar/helpers/assets.dart';
+// import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:path/path.dart'; // For basename
-import 'package:http_parser/http_parser.dart'; // For MediaType
+import 'package:http_parser/http_parser.dart';
+import 'package:sqflite/sqflite.dart'; // For MediaType
 
 Future<void> uploadMultipleFiles(
   List<String> filePaths,
@@ -13,8 +16,8 @@ Future<void> uploadMultipleFiles(
   String? serverUrl,
 ) async {
   serverUrl = serverUrl != null
-      ? "$serverUrl/check_data"
-      : "http://127.0.0.1:5000/check_data";
+      ? "$serverUrl/make_sync"
+      : "http://127.0.0.1:5000/make_sync";
   var uri = Uri.parse(serverUrl);
   var request = http.MultipartRequest("POST", uri);
 
@@ -52,6 +55,9 @@ Future<void> uploadMultipleFiles(
 
     if (response.statusCode == 200) {
       print("✅ Upload successful!");
+      AppConstants.isMobile
+          ? DatabaseHelper.instance.cleanChangesSqlite()
+          : DatabaseHelper.instance.cleanChanges();
       var responseBody = await response.stream.bytesToString();
       print("Server response: $responseBody");
     } else {
