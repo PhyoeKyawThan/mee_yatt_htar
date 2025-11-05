@@ -613,6 +613,7 @@ class EmployeeListItem extends StatelessWidget {
 
   Widget _buildDesktopItem(BuildContext context) {
     String _imagePath = "$imageDir/${employee.imagePath}";
+    print(_imagePath);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: ListTile(
