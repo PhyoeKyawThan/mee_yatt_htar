@@ -3,6 +3,7 @@ from datetime import datetime
 import enum
 from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped
+from sqlalchemy.sql import text
 db = SQLAlchemy()
 
 class Employee(db.Model):
@@ -31,8 +32,8 @@ class Employee(db.Model):
     remarks = db.Column(db.Text)
     imagePath = db.Column(db.Text)
     # syncId = db.Column(db.String(100), unique=True)
-    createdAt = db.Column(db.TIMESTAMP, default=datetime.utcnow)
-    updatedAt = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    createdAt = db.Column(db.TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
+    updatedAt = db.Column(db.TIMESTAMP, onupdate=text('CURRENT_TIMESTAMP'))
     # change = db.relationship('Change', back_populates='employee')
     
     def __repr__(self):
@@ -87,6 +88,6 @@ class Change(db.Model):
         employee: Employee = Employee.query.get(self.emp_id)
         if employee:
             return {
-                "type": "update" if self.type.update else "delete" if self.type.delete else "create",
+                "type": self.type.value,
                 "data": employee.to_dict()
             }

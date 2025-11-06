@@ -20,8 +20,9 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 raw_password = "domak90@"
 PASSWORD = urllib.parse.quote_plus(raw_password)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://domak:{PASSWORD}@127.0.0.1/employee_records"
+db.init_app(app = app)
 with app.app_context():
-    db.init_app(app = app)
+    db.create_all()
 
 def toDictObject(changes: Sequence[Change]) -> list[dict]:
     changes_list: list[dict] = []
@@ -37,7 +38,7 @@ def home() -> Response:
         "platform": platform.system(),
         "acknowledgement" : "open_sesame",
         # "upload_dir": app.config['UPLOAD_DIR'],
-        "url": request.host_url.rstrip('/')
+        "url": request.host_url.rstrip('/'),
     }), 200
     
 @app.route("/make_sync", methods=['POST'])
