@@ -995,6 +995,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   Future<void> _loadEmployees() async {
     try {
       final employees = await DatabaseHelper.instance.getEmployees();
+      print(employees);
       setState(() {
         _allEmployees = employees;
         _filteredEmployees = employees;

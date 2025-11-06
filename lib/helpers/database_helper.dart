@@ -182,31 +182,36 @@ class DatabaseHelper {
   // --- Unified CRUD Operations ---
 
   // Insert an employee record
-  Future<int> insertEmployee(Employee employee) async {
+  Future<int> insertEmployee(Employee employee, {is_sync_data = false}) async {
     if (isMobile) {
       int emp_id = await _insertEmployeeSQLite(employee);
       employee.id = emp_id;
-      return await _addChangesSqlite("create", employee);
+      return is_sync_data
+          ? emp_id
+          : await _addChangesSqlite("create", employee);
     } else {
-      await _addChanges("create", employee);
       int emp_id = await _insertEmployeeMySQL(employee);
       employee.id = emp_id;
-      return await _addChanges("changes", employee);
+      return is_sync_data ? emp_id : await _addChanges("create", employee);
     }
   }
 
   // Delete an employee record
-  Future<int> deleteEmployee(Employee employee) async {
+  Future<int> deleteEmployee(Employee employee, {is_sync_data = false}) async {
     final dir = await getApplicationDocumentsDirectory();
     final file = File("${dir.path}/${employee.imagePath}");
     if (await file.exists()) {
       await file.delete();
     }
     if (isMobile) {
-      await _addChangesSqlite("delete", employee);
+      if (!is_sync_data) {
+        await _addChangesSqlite("delete", employee);
+      }
       return await _deleteEmployeeSQLite(employee);
     } else {
-      await _addChanges("delete", employee);
+      if (!is_sync_data) {
+        await _addChanges("delete", employee);
+      }
       return await _deleteEmployeeMySQL(employee);
     }
   }
@@ -230,12 +235,16 @@ class DatabaseHelper {
   }
 
   // Update employee
-  Future<int> updateEmployee(Employee employee) async {
+  Future<int> updateEmployee(Employee employee, {is_sync_data = false}) async {
     if (isMobile) {
-      await _addChangesSqlite("update", employee);
+      if (!is_sync_data) {
+        await _addChangesSqlite("update", employee);
+      }
       return await _updateEmployeeSQLite(employee);
     } else {
-      await _addChanges("update", employee);
+      if (!is_sync_data) {
+        await _addChanges("update", employee);
+      }
       return await _updateEmployeeMySQL(employee);
     }
   }
@@ -343,6 +352,7 @@ class DatabaseHelper {
         }
       }),
     );
+    print(changes_);
     return changes_;
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mee_yatt_htar/helpers/debug_notifier.dart';
 // import 'package:mee_yatt_htar/helpers/assets.dart';
 // import 'package:mee_yatt_htar/helpers/file_server.dart';
 // import 'package:mee_yatt_htar/helpers/file_uploader.dart';
@@ -12,12 +13,21 @@ class SyncScreen extends StatefulWidget {
 }
 
 class _SyncScreen extends State<SyncScreen> {
-  String _syncText = "This is default sync text";
   Future<void> _handleSync() async {
     // FileServer fs = FileServer();
     // String? fileServerURL = await fs.start();
+    DebugNotifier.update("Searching for server....");
     String? address = await SyncHelper.getPythonSyncServer();
-    await SyncHelper.sendJsonToServer(address);
+
+    DebugNotifier.update(
+      address != null
+          ? "Found server at: $address"
+          : "File server not found or you r in different network",
+    );
+    await Future.delayed(const Duration(seconds: 1));
+    if (address != null) {
+      await SyncHelper.sendJsonToServer(address);
+    }
   }
 
   @override
@@ -27,7 +37,16 @@ class _SyncScreen extends State<SyncScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_syncText),
+            ValueListenableBuilder<String>(
+              valueListenable: DebugNotifier.message,
+              builder: (context, value, _) {
+                return Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18),
+                );
+              },
+            ),
             SizedBox(height: 20),
             TextButton(
               onPressed: _handleSync,

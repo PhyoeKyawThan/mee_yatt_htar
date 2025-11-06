@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
+import 'package:mee_yatt_htar/helpers/debug_notifier.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 // import 'package:mee_yatt_htar/helpers/assets.dart';
 // import 'package:mee_yatt_htar/helpers/database_helper.dart';
@@ -24,6 +25,8 @@ Future<void> uploadMultipleFiles(
   var uri = Uri.parse(serverUrl);
   var request = http.MultipartRequest("POST", uri);
   final dir = await getApplicationDocumentsDirectory();
+  DebugNotifier.update("Preparing files");
+  await Future.delayed(const Duration(seconds: 1));
   // --- Add multiple image or file uploads ---
   for (String filePath in filePaths) {
     File file = File("${dir.path}/$filePath");
@@ -54,22 +57,34 @@ Future<void> uploadMultipleFiles(
   request.files.add(multipartJson);
 
   try {
+    DebugNotifier.update("Sending...");
+    await Future.delayed(const Duration(seconds: 1));
     var response = await request.send();
 
     if (response.statusCode == 200) {
-      print("✅ Upload successful!");
+      DebugNotifier.update("Success");
+      await Future.delayed(const Duration(seconds: 1));
       AppConstants.isMobile
           ? DatabaseHelper.instance.cleanChangesSqlite()
           : DatabaseHelper.instance.cleanChanges();
       var responseBody = await response.stream.bytesToString();
       var json = jsonDecode(responseBody);
       // if (!json['data_provided_from_android']) {
-      if (json['has_changes'] || json['has_also_changes']) {
+      if (json['has_changes']) {
+        DebugNotifier.update("Server db has changes, applying..");
+        await Future.delayed(const Duration(seconds: 1));
         for (var ch in json['changes']) {
           Employee emp = Employee.fromMap(ch['data']);
+          DebugNotifier.update(
+            "Apply(${ch['type']}): ${emp.fullName} - ${emp.currentPosition}",
+          );
+          await Future.delayed(const Duration(seconds: 1));
           if (ch['type'] == "update") {
             await downloadAndStoreFile(baseServerURL, "${emp.imagePath}");
-            await DatabaseHelper.instance.updateEmployee(emp);
+            await DatabaseHelper.instance.updateEmployee(
+              emp,
+              is_sync_data: true,
+            );
           }
           if (ch['type'] == "create") {
             final image = await downloadAndStoreFile(
@@ -77,21 +92,37 @@ Future<void> uploadMultipleFiles(
               "${emp.imagePath}",
             );
             if (image != null) {
-              await DatabaseHelper.instance.insertEmployee(emp);
+              await DatabaseHelper.instance.insertEmployee(
+                emp,
+                is_sync_data: true,
+              );
             }
           }
           if (ch['type'] == "delete") {
-            await DatabaseHelper.instance.deleteEmployee(emp);
+            await DatabaseHelper.instance.deleteEmployee(
+              emp,
+              is_sync_data: true,
+            );
           }
+          DebugNotifier.update("Employee(${emp.fullName}): Success");
+          await Future.delayed(const Duration(seconds: 1));
         }
         // }
+        DebugNotifier.update("Synced Successfully");
+        await Future.delayed(const Duration(seconds: 1));
       }
     } else {
       var responseBody = await response.stream.bytesToString();
-      print("Server response: $responseBody");
+      var json = jsonDecode(responseBody);
+      DebugNotifier.update(
+        json['has_also_changes']
+            ? "There is also nothing changes on server!"
+            : "Server error",
+      );
     }
-  } catch (e) {
-    print("⚠️ Error uploading files: $e");
+  } catch (e, stackTrace) {
+    DebugNotifier.update("Server error while uploading data");
+    print(stackTrace);
   }
 }
 
@@ -112,12 +143,14 @@ Future<File?> downloadAndStoreFile(String serverUrl, String filename) async {
 
     // Otherwise, download from the server
     final url = Uri.parse('$serverUrl/uploads/$filename');
+    DebugNotifier.update("Downloading profile image...");
     // print('📥 Downloading from: $url');
 
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       // Ensure directory exists
+      DebugNotifier.update("Downloaded");
       await Directory(path.dirname(filePath)).create(recursive: true);
 
       // Write file bytes

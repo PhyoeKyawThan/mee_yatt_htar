@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:mee_yatt_htar/helpers/assets.dart';
 // import 'package:mee_yatt_htar/helpers/change_tracker.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
+import 'package:mee_yatt_htar/helpers/debug_notifier.dart';
 import 'package:mee_yatt_htar/helpers/file_uploader.dart';
 // import 'package:sqflite/sqlite_api.dart';
 
@@ -165,12 +166,10 @@ class SyncHelper {
   // =============================
   // NEW METHOD: Send JSON to Server
   // =============================
-  static Future<void> sendJsonToServer(
-    String? serverUrl,
-    // String? fileServerUrl,
-    // Map<String, dynamic> jsonData,
-  ) async {
+  static Future<void> sendJsonToServer(String? serverUrl) async {
     // try {
+    DebugNotifier.update("Checking changes");
+    await Future.delayed(const Duration(seconds: 1));
     List<Map<String, dynamic>> changes = AppConstants.isMobile
         ? await DatabaseHelper.instance.getChangeSqlite()
         : await DatabaseHelper.instance.getChanges();
@@ -180,46 +179,17 @@ class SyncHelper {
           ? "android"
           : (Platform.isWindows ? "Window" : "Linux"),
       "changes": changes,
-      // "file_server": {"url": fileServerUrl},
     };
+    DebugNotifier.update(
+      changes.isNotEmpty ? "Found changes" : "Noting change",
+    );
+    await Future.delayed(const Duration(seconds: 1));
     List<String> images = [];
     for (var e in changes) {
       if (e['type'] != null) {
         images.add(e['data']['imagePath']);
       }
     }
-    // changes.map((data) {
-    // if (data['imagePath'] && data['imagePath'] != null) {
-    // images.add(data['imagePath']);
-    // }
-    // });
-    // DatabaseHelper.instance.cleanChangesSqlite();
-    await uploadMultipleFiles(
-      images,
-      jsonData,
-      serverUrl,
-      //   // isJsonFilePath: true,
-    );
-    //   final response = await http.post(
-    //     Uri.parse('$serverUrl/sync'),
-    //     headers: {'Content-Type': 'application/json'},
-    //     body: jsonEncode(jsonData),
-    //   );
-
-    //   print('➡️ Sending data to $serverUrl/sync ...');
-    //   print('📦 Payload: ${jsonEncode(jsonData)}');
-
-    //   if (response.statusCode == 200) {
-    //     await ChangeTracker.clear();
-    //     await DatabaseHelper.instance.cleanChanges();
-    //     print('✅ Server Response: ${response.body}');
-    //   } else {
-    //     print(
-    //       '⚠️ Server responded with ${response.statusCode}: ${response.body}',
-    //     );
-    //   }
-    // } catch (e) {
-    //   print('❌ Failed to send JSON data: $e');
-    // }
+    await uploadMultipleFiles(images, jsonData, serverUrl);
   }
 }
