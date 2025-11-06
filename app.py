@@ -48,16 +48,16 @@ def make_sync():
     if request.method == "POST":
         images = request.files.getlist('files[]')
         json_path = request.files.get('json_data')
-        # print(json_path.read())
-        if json_path and json_path.content_length > 0:
-            changes_data = json.loads(json_path.read())
-            # print(changes_data)
+        changes_data = json_path.read()
+        if json_path and len(changes_data) > 0:
+            changes_data = json.loads(changes_data)
             sync = Sync(changes_data, images, app.config['UPLOAD_DIR'])
             sync.apply_changes()
+            
             return jsonify({
                 "status": True,
                 "data_provided_from_android": True,
-                "has_also_changes": len(mysql_changes) > 0,
+                "has_changes": len(mysql_changes) > 0,
                 "changes": toDictObject(mysql_changes)
             }), 200
         if len(mysql_changes) > 0:
@@ -71,7 +71,8 @@ def make_sync():
             }), 200
         return jsonify({
             "message": "Json file didn't provided",
-            "status": False
+            "status": False,
+            "has_changes": len(mysql_changes) > 0
         }), 400
     return jsonify({
         "message": "Method Not Allowed",
