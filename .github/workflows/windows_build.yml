@@ -1,9 +1,9 @@
 name: Build Flutter Windows App
 
 on:
-  workflow_dispatch:  
   push:
-    branches: [ main ]  
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build_windows:
@@ -13,9 +13,23 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: flutter pub get
-      - run: flutter build windows --release
-      - name: Upload build artifact
+
+      - name: Check Flutter
+        run: flutter doctor -v
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release --verbose
+
+      - name: List build output
+        run: dir build\windows\runner\ /s
+
+      - name: Upload Windows Build
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
