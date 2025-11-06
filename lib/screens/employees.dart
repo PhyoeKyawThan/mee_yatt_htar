@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
@@ -827,59 +828,66 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildMobileBottomSheet(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return SingleChildScrollView(
       child: Container(
-        padding: const EdgeInsets.all(16.0),
+        // padding: const EdgeInsets.all(10.0),
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.9),
         child: _buildFilterContent(),
       ),
     );
   }
 
   Widget _buildFilterContent() {
-    return SingleChildScrollView(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 400,
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Gender Filter
-          _buildFilterSection('Gender', [
-            _buildFilterChip('Male', 'Male'),
-            _buildFilterChip('Female', 'Female'),
-          ]),
+      child: SingleChildScrollView(
+        // padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Gender Filter
+            _buildFilterSection('Gender', [
+              _buildFilterChip('Male', 'Male'),
+              _buildFilterChip('Female', 'Female'),
+            ]),
 
-          // Education Level Filter
-          _buildFilterSection('Education Level', [
-            _buildFilterChip('ဝိဇ္ဇာ', 'ဝိဇ္ဇာ'),
-            _buildFilterChip('သိပ္ပံ', 'သိပ္ပံ'),
-            _buildFilterChip('အထက်တန်း', 'အထက်တန်း'),
-            _buildFilterChip('အလယ်တန်း', 'အလယ်တန်း'),
-            _buildFilterChip('မူလတန်း', 'မူလတန်း'),
-            _buildFilterChip('စာရေးတတ်ဖတ်တတ်', 'စာရေးတတ်ဖတ်တတ်'),
-          ]),
+            // Education Level Filter
+            _buildFilterSection('Education Level', [
+              _buildFilterChip('ဝိဇ္ဇာ', 'ဝိဇ္ဇာ'),
+              _buildFilterChip('သိပ္ပံ', 'သိပ္ပံ'),
+              _buildFilterChip('အထက်တန်း', 'အထက်တန်း'),
+              _buildFilterChip('အလယ်တန်း', 'အလယ်တန်း'),
+              _buildFilterChip('မူလတန်း', 'မူလတန်း'),
+              _buildFilterChip('စာရေးတတ်ဖတ်တတ်', 'စာရေးတတ်ဖတ်တတ်'),
+            ]),
 
-          // Branch Filter
-          _buildFilterSection('Branch', [
-            _buildFilterChip('ဟင်္သာတ', 'ဟင်္သာတ'),
-            _buildFilterChip('ရေကြည်', 'ရေကြည်'),
-            _buildFilterChip('မဲဇလီကုန်း', 'မဲဇလီကုန်း'),
-            _buildFilterChip('ဥသျှစ်ပင်', 'ဥသျှစ်ပင်'),
-            _buildFilterChip('မင်းဘူး', 'မင်းဘူး'),
-            _buildFilterChip('သရက်', 'သရက်'),
-          ]),
+            // Branch Filter
+            _buildFilterSection('Branch', [
+              _buildFilterChip('ဟင်္သာတ', 'ဟင်္သာတ'),
+              _buildFilterChip('ရေကြည်', 'ရေကြည်'),
+              _buildFilterChip('မဲဇလီကုန်း', 'မဲဇလီကုန်း'),
+              _buildFilterChip('ဥသျှစ်ပင်', 'ဥသျှစ်ပင်'),
+              _buildFilterChip('မင်းဘူး', 'မင်းဘူး'),
+              _buildFilterChip('သရက်', 'သရက်'),
+            ]),
 
-          // Salary Range Filter
-          _buildFilterSection('Salary Range', [
-            _buildFilterChip('308000-4000-328000', '308000-4000-328000'),
-            _buildFilterChip('275000-4000-295000', '275000-4000-295000'),
-            _buildFilterChip('234000-2000-224000', '234000-2000-224000'),
-            _buildFilterChip('216000-2000-226000', '216000-2000-226000'),
-            _buildFilterChip('198000-2000-208000', '198000-2000-208000'),
-            _buildFilterChip('180000-2000-190000', '180000-2000-190000'),
-            _buildFilterChip('162000-2000-172000', '162000-2000-172000'),
-            _buildFilterChip('144000-2000-154000', '144000-2000-154000'),
-          ]),
-        ],
+            // Salary Range Filter
+            _buildFilterSection('Salary Range', [
+              _buildFilterChip('308000-4000-328000', '308000-4000-328000'),
+              _buildFilterChip('275000-4000-295000', '275000-4000-295000'),
+              _buildFilterChip('234000-2000-224000', '234000-2000-224000'),
+              _buildFilterChip('216000-2000-226000', '216000-2000-226000'),
+              _buildFilterChip('198000-2000-208000', '198000-2000-208000'),
+              _buildFilterChip('180000-2000-190000', '180000-2000-190000'),
+              _buildFilterChip('162000-2000-172000', '162000-2000-172000'),
+              _buildFilterChip('144000-2000-154000', '144000-2000-154000'),
+            ]),
+          ],
+        ),
       ),
     );
   }
@@ -901,7 +909,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return FilterChip(
       label: Text(
         label,
-        style: TextStyle(fontSize: LayoutConstants.isDesktop ? 14 : 12),
+        style: TextStyle(fontSize: LayoutConstants.isDesktop ? 14 : 10),
       ),
       selected: isSelected,
       onSelected: (selected) {
@@ -910,6 +918,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             _currentFilters.selectedValues.add(value);
           } else {
             _currentFilters.selectedValues.remove(value);
+          }
+          if (LayoutConstants.isMobile) {
+            widget.onApplyFilters(_currentFilters);
           }
         });
       },
@@ -1138,7 +1149,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             ),
           ..._currentFilters.selectedValues.map(
             (value) => Chip(
-              label: Text(value),
+              label: Text(value, style: TextStyle(fontSize: 10)),
               deleteIcon: const Icon(Icons.close, size: 16),
               onDeleted: () {
                 setState(() {
