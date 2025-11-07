@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:mee_yatt_htar/helpers/assets.dart';
+// import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
+import 'package:mee_yatt_htar/helpers/excel/excel_service.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:mee_yatt_htar/screens/edit_employee.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqlite_api.dart';
+// import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart' as path;
 
 // -----------------------------------------------------------------------------
@@ -1106,25 +1107,229 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText:
-              'Search by name, position, branch, education Description or NRC...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _searchController.clear();
-              _applyFilters();
-            },
+    return Row(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText:
+                    'Search by name, position, branch, education, description or NRC...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    _applyFilters();
+                  },
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25.0),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 12.0,
+                  horizontal: 16.0,
+                ),
+              ),
+              onChanged: (value) {
+                // Optional: Add debounce for real-time search
+                _applyFilters();
+              },
+            ),
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(25.0)),
         ),
+        // Quick export button
+        Padding(
+          padding: const EdgeInsets.only(right: 4.0),
+          child: IconButton(
+            icon: const Icon(Icons.downloading, size: 24),
+            onPressed: _quickExportFilteredDataToExcel,
+            tooltip: 'Quick export to Excel (default columns)',
+          ),
+        ),
+        // Export with column selection
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: IconButton(
+            icon: const Icon(Icons.file_download, size: 24),
+            onPressed: _exportFilteredDataToExcel,
+            tooltip: 'Export to Excel with column selection',
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Add this function to your widget class
+  Future<void> _showColumnSelectionDialog(BuildContext context) async {
+    List<Map<String, dynamic>> selectedColumns = List.from(
+      ExcelExportService.availableColumns,
+    );
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Select Columns to Export'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Button row with wrapped layout
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              for (var column in selectedColumns) {
+                                column['selected'] = true;
+                              }
+                            });
+                          },
+                          child: const Text('Select All'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              for (var column in selectedColumns) {
+                                column['selected'] = false;
+                              }
+                            });
+                          },
+                          child: const Text('Deselect All'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              ExcelExportService.resetToDefaultSelection();
+                              selectedColumns = List.from(
+                                ExcelExportService.availableColumns,
+                              );
+                            });
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Scrollable column list
+                    SizedBox(
+                      height:
+                          MediaQuery.of(context).size.height *
+                          0.5, // Limit height
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: selectedColumns.length,
+                        itemBuilder: (context, index) {
+                          final column = selectedColumns[index];
+                          return CheckboxListTile(
+                            title: Text(column['title']),
+                            value: column['selected'],
+                            onChanged: (bool? value) {
+                              setState(() {
+                                column['selected'] = value ?? false;
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    ExcelExportService.updateColumnSelection(selectedColumns);
+                    Navigator.of(context).pop();
+                    _exportToExcelWithSelectedColumns();
+                  },
+                  child: const Text('Export'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // This function is called after column selection
+  void _exportToExcelWithSelectedColumns() async {
+    final result = await ExcelExportService.exportToExcel(
+      employees: _filteredEmployees,
+      selectedColumns: ExcelExportService.availableColumns
+          .where((col) => col['selected'] == true)
+          .toList(),
+      fileName: 'filtered_employee_data',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+        duration: const Duration(seconds: 5),
       ),
     );
+
+    if (result.success) {
+      print(
+        'Export successful: ${result.recordCount} records, ${result.columnCount} columns',
+      );
+    }
+  }
+
+  // Your existing export function that triggers the dialog
+  void _exportFilteredDataToExcel() async {
+    if (_filteredEmployees.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No data to export')));
+      return;
+    }
+
+    // Show column selection dialog first
+    await _showColumnSelectionDialog(context);
+  }
+
+  // Quick export without column selection
+  void _quickExportFilteredDataToExcel() async {
+    if (_filteredEmployees.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No data to export')));
+      return;
+    }
+
+    final result = await ExcelExportService.quickExport(
+      employees: _filteredEmployees,
+      fileName: 'filtered_employee_data',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+
+    if (result.success) {
+      print(
+        'Export successful: ${result.recordCount} records, ${result.columnCount} columns',
+      );
+    }
   }
 
   Widget _buildFilterChips() {
