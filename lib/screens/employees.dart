@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mee_yatt_htar/helpers/assets.dart';
 // import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
@@ -1107,10 +1108,61 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Row(
-      children: [
-        Expanded(
-          child: Padding(
+    return AppConstants.isMobile
+        ? Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText:
+                          'Search by name, position, branch, education, description or NRC...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _applyFilters();
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25.0),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12.0,
+                        horizontal: 16.0,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      // Optional: Add debounce for real-time search
+                      _applyFilters();
+                    },
+                  ),
+                ),
+              ),
+              // Quick export button
+              Padding(
+                padding: const EdgeInsets.only(right: 4.0),
+                child: IconButton(
+                  icon: const Icon(Icons.downloading, size: 24),
+                  onPressed: _quickExportFilteredDataToExcel,
+                  tooltip: 'Quick export to Excel (default columns)',
+                ),
+              ),
+              // Export with column selection
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  icon: const Icon(Icons.file_download, size: 24),
+                  onPressed: _exportFilteredDataToExcel,
+                  tooltip: 'Export to Excel with column selection',
+                ),
+              ),
+            ],
+          )
+        : Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
               controller: _searchController,
@@ -1138,28 +1190,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                 _applyFilters();
               },
             ),
-          ),
-        ),
-        // Quick export button
-        Padding(
-          padding: const EdgeInsets.only(right: 4.0),
-          child: IconButton(
-            icon: const Icon(Icons.downloading, size: 24),
-            onPressed: _quickExportFilteredDataToExcel,
-            tooltip: 'Quick export to Excel (default columns)',
-          ),
-        ),
-        // Export with column selection
-        Padding(
-          padding: const EdgeInsets.only(right: 8.0),
-          child: IconButton(
-            icon: const Icon(Icons.file_download, size: 24),
-            onPressed: _exportFilteredDataToExcel,
-            tooltip: 'Export to Excel with column selection',
-          ),
-        ),
-      ],
-    );
+          );
   }
 
   // Add this function to your widget class
@@ -1173,59 +1204,66 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Select Columns to Export'),
-              content: SizedBox(
-                width: double.maxFinite,
+            return Dialog(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Button row with wrapped layout
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      spacing: 8.0,
-                      runSpacing: 8.0,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              for (var column in selectedColumns) {
-                                column['selected'] = true;
-                              }
-                            });
-                          },
-                          child: const Text('Select All'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              for (var column in selectedColumns) {
-                                column['selected'] = false;
-                              }
-                            });
-                          },
-                          child: const Text('Deselect All'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              ExcelExportService.resetToDefaultSelection();
-                              selectedColumns = List.from(
-                                ExcelExportService.availableColumns,
-                              );
-                            });
-                          },
-                          child: const Text('Reset'),
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Select Columns to Export',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    // Button row
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                for (var column in selectedColumns) {
+                                  column['selected'] = true;
+                                }
+                              });
+                            },
+                            child: const Text('Select All'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                for (var column in selectedColumns) {
+                                  column['selected'] = false;
+                                }
+                              });
+                            },
+                            child: const Text('Deselect All'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                ExcelExportService.resetToDefaultSelection();
+                                selectedColumns = List.from(
+                                  ExcelExportService.availableColumns,
+                                );
+                              });
+                            },
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-
                     // Scrollable column list
-                    SizedBox(
-                      height:
-                          MediaQuery.of(context).size.height *
-                          0.5, // Limit height
+                    Expanded(
                       child: ListView.builder(
                         shrinkWrap: true,
                         itemCount: selectedColumns.length,
@@ -1243,23 +1281,33 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                         },
                       ),
                     ),
+                    // Actions
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              ExcelExportService.updateColumnSelection(
+                                selectedColumns,
+                              );
+                              Navigator.of(context).pop();
+                              _exportToExcelWithSelectedColumns();
+                            },
+                            child: const Text('Export'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ExcelExportService.updateColumnSelection(selectedColumns);
-                    Navigator.of(context).pop();
-                    _exportToExcelWithSelectedColumns();
-                  },
-                  child: const Text('Export'),
-                ),
-              ],
             );
           },
         );
