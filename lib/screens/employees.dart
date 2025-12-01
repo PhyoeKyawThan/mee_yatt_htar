@@ -5,6 +5,7 @@ import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:mee_yatt_htar/helpers/excel/excel_service.dart';
+import 'package:mee_yatt_htar/helpers/funcs.dart';
 import 'package:mee_yatt_htar/screens/add_employee.dart';
 import 'package:mee_yatt_htar/screens/edit_employee.dart';
 import 'package:path_provider/path_provider.dart';
@@ -228,6 +229,10 @@ class EmployeeDetailScreen extends StatelessWidget {
                       calculateCurrentAge(employee.dateOfBirth),
                     ),
                     _buildDesktopInfoRow(
+                      'Pension Date',
+                      calculatePensionRemaining(employee.dateOfBirth),
+                    ),
+                    _buildDesktopInfoRow(
                       'Education Level',
                       employee.educationLevel ?? 'Not specified',
                     ),
@@ -260,6 +265,10 @@ class EmployeeDetailScreen extends StatelessWidget {
                     _buildDesktopInfoRow(
                       'First Assigned Date',
                       employee.firstAssignedDate ?? 'Not specified',
+                    ),
+                    _buildDesktopInfoRow(
+                      'Service Date',
+                      calculateCurrentAge(employee.firstAssignedDate),
                     ),
                     _buildDesktopInfoRow(
                       'Current Position',
@@ -336,6 +345,10 @@ class EmployeeDetailScreen extends StatelessWidget {
               calculateCurrentAge(employee.dateOfBirth),
             ),
             _buildInfoRow(
+              'Pension Date',
+              calculatePensionRemaining(employee.dateOfBirth),
+            ),
+            _buildInfoRow(
               'Education Level',
               employee.educationLevel ?? 'Not specified',
             ),
@@ -359,6 +372,10 @@ class EmployeeDetailScreen extends StatelessWidget {
             _buildInfoRow(
               'First Assigned Date',
               employee.firstAssignedDate ?? 'Not specified',
+            ),
+            _buildInfoRow(
+              'Service Date',
+              calculateCurrentAge(employee.firstAssignedDate),
             ),
             _buildInfoRow(
               'Current Position',
@@ -403,9 +420,11 @@ class EmployeeDetailScreen extends StatelessWidget {
       child: CircleAvatar(
         radius: LayoutConstants.avatarRadius,
         backgroundColor: Colors.grey.shade200,
-        backgroundImage: employee.imagePath != null
+        backgroundImage: File(imagePath!).existsSync()
             ? FileImage(File("$imagePath")) as ImageProvider
-            : const AssetImage('assets/default_avatar.png'),
+            : employee.gender == "Male"
+            ? const AssetImage('assets/images/male_avatar.jpg')
+            : const AssetImage('assets/images/female_avatar.jpg'),
         child: employee.imagePath == null
             ? Icon(
                 Icons.person,
@@ -615,17 +634,21 @@ class EmployeeListItem extends StatelessWidget {
   }
 
   Widget _buildDesktopItem(BuildContext context) {
-    String _imagePath = "$imageDir/${employee.imagePath}";
-    print(_imagePath);
+    String? imagePath = "$imageDir/${employee.imagePath}";
+    if (!File(imagePath).existsSync()) {
+      imagePath = null;
+    }
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: ListTile(
         leading: CircleAvatar(
           radius: 28,
           backgroundColor: Colors.grey.shade200,
-          backgroundImage: employee.imagePath != null
-              ? FileImage(File(_imagePath)) as ImageProvider
-              : const AssetImage('assets/default_avatar.png'),
+          backgroundImage: employee.imagePath != null && imagePath != null
+              ? FileImage(File(imagePath)) as ImageProvider
+              : employee.gender == "Male"
+              ? const AssetImage('assets/images/male_avatar.jpg')
+              : const AssetImage('assets/images/female_avatar.jpg'),
           child: employee.imagePath == null
               ? const Icon(Icons.person, color: Colors.grey)
               : null,
