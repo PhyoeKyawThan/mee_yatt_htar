@@ -63,7 +63,8 @@ class ExcelExportService {
     try {
       // Check storage permission
       var status = await Permission.storage.request();
-      if (!status.isGranted) {
+      var storage = await Permission.manageExternalStorage.request();
+      if (!status.isGranted && !storage.isGranted) {
         return ExportResult(
           success: false,
           message: 'Storage permission required',

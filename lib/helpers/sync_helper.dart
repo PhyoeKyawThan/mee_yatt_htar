@@ -20,6 +20,9 @@ class SyncHelper {
       final interfaces = await NetworkInterface.list();
 
       for (var interface in interfaces) {
+        // Only consider Wi-Fi interface
+        if (interface.name != 'wlan0') continue;
+
         for (var addr in interface.addresses) {
           if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
             print(
@@ -30,6 +33,7 @@ class SyncHelper {
         }
       }
 
+      // fallback
       return await _getIpFromExternalService();
     } catch (e) {
       print('Error getting local IP: $e');
