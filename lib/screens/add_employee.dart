@@ -306,7 +306,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       final File newImage = await imageFile.copy(newPath);
       return path.basename(newImage.path);
     } catch (e) {
-      print('Error saving image: $e');
+      // print('Error saving image: $e');
       return null;
     }
   }

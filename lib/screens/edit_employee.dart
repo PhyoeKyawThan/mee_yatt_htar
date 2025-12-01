@@ -142,7 +142,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         _selectedDate = dateFormat.parse(widget.employee.dateOfBirth!);
       }
     } catch (e) {
-      print('Error parsing date: $e');
+      // print('Error parsing date: $e');
     }
   }
 
@@ -297,7 +297,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       final File newImage = await imageFile.copy(newPath);
       return path.basename(newImage.path);
     } catch (e) {
-      print('Error saving image: $e');
+      // print('Error saving image: $e');
       return _originalImagePath;
     }
   }

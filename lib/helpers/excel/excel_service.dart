@@ -157,7 +157,7 @@ class ExcelExportService {
         columnCount: selectedColumns.length,
       );
     } catch (e) {
-      print('Export error: $e');
+      // print('Export error: $e');
       return ExportResult(
         success: false,
         message: 'Export failed: ${e.toString()}',
@@ -233,7 +233,7 @@ class ExcelExportService {
         sheet.setColumnWidth(i, width);
       }
     } catch (e) {
-      print('Column width setting error: $e');
+      // print('Column width setting error: $e');
       // Continue without column widths - file will still be created
     }
   }
@@ -345,7 +345,7 @@ class ExcelExportService {
         columnCount: selectedColumns.length,
       );
     } catch (e) {
-      print('Export error: $e');
+      // print('Export error: $e');
       return ExportResult(
         success: false,
         message: 'Export failed: ${e.toString()}',

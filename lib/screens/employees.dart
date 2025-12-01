@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mee_yatt_htar/helpers/assets.dart';
-// import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/database_helper.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:mee_yatt_htar/helpers/excel/excel_service.dart';
@@ -1031,7 +1030,6 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   Future<void> _loadEmployees() async {
     try {
       final employees = await DatabaseHelper.instance.getEmployees();
-      print(employees);
       setState(() {
         _allEmployees = employees;
         _filteredEmployees = employees;
