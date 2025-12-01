@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:mee_yatt_htar/helpers/assets.dart';
 import 'package:mee_yatt_htar/helpers/employee.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:excel/excel.dart';
@@ -62,14 +63,16 @@ class ExcelExportService {
   }) async {
     try {
       // Check storage permission
-      var status = await Permission.storage.request();
-      var storage = await Permission.manageExternalStorage.request();
-      if (!status.isGranted && !storage.isGranted) {
-        return ExportResult(
-          success: false,
-          message: 'Storage permission required',
-          filePath: null,
-        );
+      if (AppConstants.isMobile) {
+        var status = await Permission.storage.request();
+        var storage = await Permission.manageExternalStorage.request();
+        if (!status.isGranted && !storage.isGranted) {
+          return ExportResult(
+            success: false,
+            message: 'Storage permission required',
+            filePath: null,
+          );
+        }
       }
 
       if (employees.isEmpty) {
@@ -243,13 +246,15 @@ class ExcelExportService {
   }) async {
     try {
       // Check storage permission
-      var status = await Permission.storage.request();
-      if (!status.isGranted) {
-        return ExportResult(
-          success: false,
-          message: 'Storage permission required',
-          filePath: null,
-        );
+      if (AppConstants.isMobile) {
+        var status = await Permission.storage.request();
+        if (!status.isGranted) {
+          return ExportResult(
+            success: false,
+            message: 'Storage permission required',
+            filePath: null,
+          );
+        }
       }
 
       if (employees.isEmpty) {
@@ -318,10 +323,19 @@ class ExcelExportService {
           filePath: null,
         );
       }
-
-      final File file = File(filePath);
-      await file.writeAsBytes(fileBytes, flush: true);
-
+      if (AppConstants.isDesktop) {
+        String? filePath = await FilePicker.platform.saveFile(
+          dialogTitle: "Please select a folder to save excel data.",
+          fileName: fullFileName,
+        );
+        if (filePath != null) {
+          final file = File(filePath);
+          await file.writeAsBytes(fileBytes, flush: true);
+        }
+      } else {
+        final File file = File(filePath);
+        await file.writeAsBytes(fileBytes, flush: true);
+      }
       return ExportResult(
         success: true,
         message:

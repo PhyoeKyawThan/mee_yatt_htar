@@ -1164,31 +1164,54 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
           )
         : Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText:
-                    'Search by name, position, branch, education, description or NRC...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _applyFilters();
-                  },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText:
+                          'Search by name, position, branch, education, description or NRC...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _applyFilters();
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25.0),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12.0,
+                        horizontal: 16.0,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      // Optional: Add debounce for real-time search
+                      _applyFilters();
+                    },
+                  ),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
+                Padding(
+                  padding: const EdgeInsets.only(right: 4.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.downloading, size: 24),
+                    onPressed: _quickExportFilteredDataToExcel,
+                    tooltip: 'Quick export to Excel (default columns)',
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 12.0,
-                  horizontal: 16.0,
+                // Export with column selection
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.file_download, size: 24),
+                    onPressed: _exportFilteredDataToExcel,
+                    tooltip: 'Export to Excel with column selection',
+                  ),
                 ),
-              ),
-              onChanged: (value) {
-                // Optional: Add debounce for real-time search
-                _applyFilters();
-              },
+              ],
             ),
           );
   }
