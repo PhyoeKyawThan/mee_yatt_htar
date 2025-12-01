@@ -1,0 +1,101 @@
+name: Flutter Build & Release (Android/Windows)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'GitHub Release Tag (e.g., v1.0.0)'
+        required: true
+      version_code:
+        description: 'Android Version Code (e.g., 100)'
+        required: true
+        
+jobs:
+  # --- JOB 1: ANDROID BUILD (Ubuntu Runner) ---
+  android_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 2. Set up Flutter
+        # Uses the community action to install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: 3. Set up Java (for Android build)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: 4. Get Dependencies
+        run: flutter pub get
+        
+      - name: 5. Build Android Release (APK)
+        # We use --build-name and --build-number from the workflow inputs
+        run: flutter build apk --release --target-platform=android-arm64 --build-name=${{ github.event.inputs.tag_name }} --build-number=${{ github.event.inputs.version_code }}
+        
+      - name: 6. Upload Android Artifact
+        # Uploads the built APK file to be used in the release job
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  # --- JOB 2: WINDOWS BUILD (Windows Runner) ---
+  windows_build:
+    runs-on: windows-latest
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Set up Flutter
+        # Uses the community action to install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: 3. Enable Windows Desktop
+        # Required for the first time, though usually enabled in flutter create
+        run: flutter config --enable-windows-desktop
+
+      - name: 4. Get Dependencies
+        run: flutter pub get
+
+      - name: 5. Build Windows Release (EXE Bundle)
+        # Builds the release executable
+        run: flutter build windows --release
+
+      - name: 6. Upload Windows Artifact
+        # Uploads the entire release folder for the Windows bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: build/windows/runner/Release/
+
+  # --- JOB 3: CREATE RELEASE (Depends on successful builds) ---
+  create_release:
+    # This job only runs after BOTH android_build and windows_build succeed
+    needs: [android_build, windows_build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Download Artifacts
+        # Downloads the files uploaded by the previous two jobs
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts
+          
+      - name: 2. Create GitHub Release
+        # Creates a new Draft Release and attaches all files in the artifacts folder
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.event.inputs.tag_name }}
+          name: Release ${{ github.event.inputs.tag_name }}
+          body: Automated Flutter Release - Android APK and Windows ZIP Bundle.
+          draft: true
+          # The artifacts directory contains the APK and the Windows release folder
+          artifacts: "artifacts/**/*"
