@@ -1,6 +1,6 @@
 permissions:
   contents: write
-  
+
 on:
   workflow_dispatch:
     inputs:
@@ -10,106 +10,95 @@ on:
       version_code:
         description: 'Android Version Code (e.g., 100)'
         required: true
-        
+
 jobs:
-  # --- JOB 1: ANDROID BUILD (Ubuntu Runner) ---
+
+  # --- JOB 1: ANDROID BUILD ---
   android_build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Code
+      - name: Checkout Code
         uses: actions/checkout@v4
-        
-      - name: 2. Set up Flutter
-        # Uses the community action to install Flutter
+
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          
-      - name: 3. Set up Java (for Android build)
+          channel: stable
+
+      - name: Set up Java (Android)
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          
-      - name: 4. Get Dependencies
+          distribution: temurin
+          java-version: 17
+
+      - name: Get Dependencies
         run: flutter pub get
-        
-      - name: 5. Build Android Release (APK)
-        # We use --build-name and --build-number from the workflow inputs
-        run: flutter build apk --release --target-platform=android-arm64 --build-name=${{ github.event.inputs.tag_name }} --build-number=${{ github.event.inputs.version_code }}
-        
-      - name: 6. Upload Android Artifact
-        # Uploads the built APK file to be used in the release job
+
+      - name: Build Android APK
+        run: flutter build apk --release --target-platform=android-arm64 \
+          --build-name=${{ github.event.inputs.tag_name }} \
+          --build-number=${{ github.event.inputs.version_code }}
+
+      - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-artifacts
+          name: android-artifact
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  # --- JOB 2: WINDOWS BUILD (Windows Runner) ---
+
+  # --- JOB 2: WINDOWS BUILD ---
   windows_build:
     runs-on: windows-latest
     steps:
-      - name: 1. Checkout Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. Set up Flutter
-        # Uses the community action to install Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          
-      - name: 3. Enable Windows Desktop
-        # Required for the first time, though usually enabled in flutter create
+          channel: stable
+
+      - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
-      - name: 4. Get Dependencies
+      - name: Get Dependencies
         run: flutter pub get
-        
-      # *** DIAGNOSTIC STEP 1: Verify Visual Studio Tools are available ***
-      - name: 4b. Check VSCMD Environment
-        # This command checks if the Visual Studio Command Prompt is available,
-        # which is essential for native Windows compilation.
-        run: |
-          vswhere -latest -products Microsoft.VisualStudio.Product.BuildTools -property installationPath
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Visual Studio Build Tools not found or incorrectly configured. Build will likely fail."
-          }
-        shell: pwsh
 
-      - name: 5. Build Windows Release (EXE Bundle)
-        # Builds the release executable
-        # The key failure is likely happening here.
+      - name: Build Windows Release
         run: flutter build windows --release
 
-      # *** DIAGNOSTIC STEP 2: List the output directory structure ***
-      - name: 5b. Check Windows Build Output Path
-        # This step will list the contents of the entire build/windows directory.
-        # This will confirm if the Release folder was created at all, and if so, where.
-        run: ls -R build/windows/
-        shell: pwsh
+      - name: Zip Windows Build
+        run: |
+          powershell Compress-Archive `
+            -Path build/windows/runner/Release/* `
+            -DestinationPath build/windows/runner/Release/windows_build.zip
 
-      - name: 6. Upload Windows Artifact
-        # Uploads the entire release folder for the Windows bundle
+      - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-artifacts
-          path: build/windows/runner/Release/
+          name: windows-artifact
+          path: build/windows/runner/Release/windows_build.zip
 
-  # --- JOB 3: CREATE RELEASE (Depends on successful builds) ---
+
+  # --- JOB 3: CREATE RELEASE ---
   create_release:
-    # This job only runs after BOTH android_build and windows_build succeed
     needs: [android_build, windows_build]
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Download Artifacts
-        # Downloads the files uploaded by the previous two jobs
+
+      - name: Download Android Artifact
         uses: actions/download-artifact@v4
         with:
-          name: release-artifacts
-          path: artifacts
-          
-      - name: 2. Create GitHub Release
-        # Creates a new Draft Release and attaches all files in the artifacts folder
+          name: android-artifact
+          path: artifacts/android
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifact
+          path: artifacts/windows
+
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -117,5 +106,4 @@ jobs:
           name: Release ${{ github.event.inputs.tag_name }}
           body: Automated Flutter Release - Android APK and Windows ZIP Bundle.
           draft: true
-          # The artifacts directory contains the APK and the Windows release folder
           artifacts: "artifacts/**/*"
