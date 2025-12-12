@@ -102,7 +102,7 @@ jobs:
       - name: Verify Build Output
         shell: pwsh
         run: |
-          $exePath = "build/windows/runner/Release/*.exe"
+          $exePath = "build/windows/x64/runner/Release/*.exe"
           if (Test-Path $exePath) {
             Get-Item $exePath | Format-Table Name, Length
             Write-Host "✅ Windows build successful"
@@ -114,7 +114,7 @@ jobs:
       - name: Zip Windows Build
         shell: pwsh
         run: |
-          $source = "build/windows/runner/Release"
+          $source = "build/windows/x64/runner/Release"
           $destination = "$source/windows_build.zip"
 
           # Create archive excluding the zip itself to avoid recursion
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifact
-          path: build/windows/runner/Release/windows_build.zip
+          path: build/windows/x64/runner/Release/windows_build.zip
 
   create_release:
     needs: [android_build, windows_build]
