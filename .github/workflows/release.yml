@@ -1,5 +1,4 @@
-permissions:
-  contents: write
+name: Flutter Build and Release
 
 on:
   workflow_dispatch:
@@ -13,7 +12,6 @@ on:
 
 jobs:
 
-  # --- JOB 1: ANDROID BUILD ---
   android_build:
     runs-on: ubuntu-latest
     steps:
@@ -45,8 +43,6 @@ jobs:
           name: android-artifact
           path: build/app/outputs/flutter-apk/app-release.apk
 
-
-  # --- JOB 2: WINDOWS BUILD ---
   windows_build:
     runs-on: windows-latest
     steps:
@@ -58,8 +54,14 @@ jobs:
         with:
           channel: stable
 
+      - name: Set up MSBuild Environment
+        uses: ilammy/setup-msbuild@v1
+
       - name: Enable Windows Desktop
-        run: flutter config --enable-windows-desktop
+        run: flutter config --enable-windows
+
+      - name: Generate Windows Runner
+        run: flutter create --platforms=windows .
 
       - name: Get Dependencies
         run: flutter pub get
@@ -79,13 +81,10 @@ jobs:
           name: windows-artifact
           path: build/windows/runner/Release/windows_build.zip
 
-
-  # --- JOB 3: CREATE RELEASE ---
   create_release:
     needs: [android_build, windows_build]
     runs-on: ubuntu-latest
     steps:
-
       - name: Download Android Artifact
         uses: actions/download-artifact@v4
         with:
