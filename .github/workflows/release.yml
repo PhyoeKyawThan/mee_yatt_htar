@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'GitHub Release Tag (e.g., v1.0.0)'
+        description: "GitHub Release Tag (e.g., v1.0.0)"
         required: true
       version_code:
-        description: 'Android Version Code (e.g., 100)'
+        description: "Android Version Code (e.g., 100)"
         required: true
 
 permissions:
-  contents: write  # Essential for creating releases
+  contents: write # Essential for creating releases
 
 jobs:
   android_build:
@@ -24,7 +24,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true  # Add caching for faster builds
+          cache: true # Add caching for faster builds
 
       - name: Set up Java (Android)
         uses: actions/setup-java@v3
@@ -58,7 +58,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true  # Add caching
+          cache: true # Add caching
 
       - name: Set up MSBuild Environment
         uses: microsoft/setup-msbuild@v2
@@ -75,23 +75,26 @@ jobs:
             Write-Warning "Windows SDK not found at expected location"
           }
 
-      - name: Enable Windows Desktop
-        run: flutter config --enable-windows
-
-      - name: Generate Windows Runner
-        # Only create if windows folder doesn't exist to avoid overwriting customizations
+      - name: Check Windows Platform Support
+        id: check_platform
+        shell: pwsh
         run: |
-          if not exist windows (
-            flutter create --platforms=windows --project-name=app .
-          ) else (
-            echo "Windows project already exists, skipping generation"
-          )
+          # Check if the 'windows' folder exists, which indicates the platform is added
+          if (Test-Path "windows") {
+            echo "exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "exists=false" >> $env:GITHUB_OUTPUT
+          }
 
-      - name: Get Dependencies
+      - name: Add Windows Platform (If Missing)
+        if: steps.check_platform.outputs.exists == 'false'
+        run: flutter create --platforms=windows --project-name=app .
+
+      - name: Get Dependencies (Windows)
         run: flutter pub get
 
       - name: Clean Previous Build (Optional)
-        run: flutter clean  # Helps avoid stale build issues
+        run: flutter clean # Helps avoid stale build issues
 
       - name: Build Windows Release
         run: flutter build windows --release
@@ -113,11 +116,11 @@ jobs:
         run: |
           $source = "build/windows/runner/Release"
           $destination = "$source/windows_build.zip"
-          
+
           # Create archive excluding the zip itself to avoid recursion
           Get-ChildItem -Path $source -Exclude "windows_build.zip" | 
             Compress-Archive -DestinationPath $destination -Force
-          
+
           Write-Host "Created: $destination"
           Get-Item $destination | Format-Table Name, Length
 
@@ -130,9 +133,9 @@ jobs:
   create_release:
     needs: [android_build, windows_build]
     runs-on: ubuntu-latest
-    if: success()  # Only run if previous jobs succeeded
+    if: success() # Only run if previous jobs succeeded
     permissions:
-      contents: write  # Needed for creating releases
+      contents: write # Needed for creating releases
     steps:
       - name: Download Android Artifact
         uses: actions/download-artifact@v4
@@ -154,15 +157,15 @@ jobs:
           name: Release ${{ github.event.inputs.tag_name }}
           body: |
             ## Automated Flutter Release
-            
+
             **Platforms included:**
             - Android ARM64 (APK)
             - Windows Desktop (ZIP)
-            
+
             **Build Details:**
             - Version: ${{ github.event.inputs.tag_name }}
             - Build Number: ${{ github.event.inputs.version_code }}
-            
+
             **Instructions:**
             1. Android: Install the APK on your device
             2. Windows: Extract the ZIP and run the EXE file
