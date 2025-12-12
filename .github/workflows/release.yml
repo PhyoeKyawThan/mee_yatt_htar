@@ -10,8 +10,10 @@ on:
         description: 'Android Version Code (e.g., 100)'
         required: true
 
-jobs:
+permissions:
+  contents: write  # Essential for creating releases
 
+jobs:
   android_build:
     runs-on: ubuntu-latest
     steps:
@@ -22,6 +24,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true  # Add caching for faster builds
 
       - name: Set up Java (Android)
         uses: actions/setup-java@v3
@@ -33,9 +36,11 @@ jobs:
         run: flutter pub get
 
       - name: Build Android APK
-        run: flutter build apk --release --target-platform=android-arm64 \
-          --build-name=${{ github.event.inputs.tag_name }} \
-          --build-number=${{ github.event.inputs.version_code }}
+        run: |
+          flutter build apk --release \
+            --target-platform=android-arm64 \
+            --build-name=${{ github.event.inputs.tag_name }} \
+            --build-number=${{ github.event.inputs.version_code }}
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
@@ -53,27 +58,68 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true  # Add caching
 
       - name: Set up MSBuild Environment
-        uses: ilammy/setup-msbuild@v1
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Verify Windows SDK Installation
+        # Quick check that Windows SDK is available
+        shell: pwsh
+        run: |
+          Write-Host "Checking Windows SDK..."
+          $sdkPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Include"
+          if (Test-Path $sdkPath) {
+            Get-ChildItem $sdkPath | Select-Object -First 3
+          } else {
+            Write-Warning "Windows SDK not found at expected location"
+          }
 
       - name: Enable Windows Desktop
         run: flutter config --enable-windows
 
       - name: Generate Windows Runner
-        run: flutter create --platforms=windows .
+        # Only create if windows folder doesn't exist to avoid overwriting customizations
+        run: |
+          if not exist windows (
+            flutter create --platforms=windows --project-name=app .
+          ) else (
+            echo "Windows project already exists, skipping generation"
+          )
 
       - name: Get Dependencies
         run: flutter pub get
 
+      - name: Clean Previous Build (Optional)
+        run: flutter clean  # Helps avoid stale build issues
+
       - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Zip Windows Build
+      - name: Verify Build Output
+        shell: pwsh
         run: |
-          powershell Compress-Archive `
-            -Path build/windows/runner/Release/* `
-            -DestinationPath build/windows/runner/Release/windows_build.zip
+          $exePath = "build/windows/runner/Release/*.exe"
+          if (Test-Path $exePath) {
+            Get-Item $exePath | Format-Table Name, Length
+            Write-Host "✅ Windows build successful"
+          } else {
+            Write-Error "❌ No EXE file found in build output"
+            exit 1
+          }
+
+      - name: Zip Windows Build
+        shell: pwsh
+        run: |
+          $source = "build/windows/runner/Release"
+          $destination = "$source/windows_build.zip"
+          
+          # Create archive excluding the zip itself to avoid recursion
+          Get-ChildItem -Path $source -Exclude "windows_build.zip" | 
+            Compress-Archive -DestinationPath $destination -Force
+          
+          Write-Host "Created: $destination"
+          Get-Item $destination | Format-Table Name, Length
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
@@ -84,6 +130,9 @@ jobs:
   create_release:
     needs: [android_build, windows_build]
     runs-on: ubuntu-latest
+    if: success()  # Only run if previous jobs succeeded
+    permissions:
+      contents: write  # Needed for creating releases
     steps:
       - name: Download Android Artifact
         uses: actions/download-artifact@v4
@@ -103,6 +152,19 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.event.inputs.tag_name }}
           name: Release ${{ github.event.inputs.tag_name }}
-          body: Automated Flutter Release - Android APK and Windows ZIP Bundle.
+          body: |
+            ## Automated Flutter Release
+            
+            **Platforms included:**
+            - Android ARM64 (APK)
+            - Windows Desktop (ZIP)
+            
+            **Build Details:**
+            - Version: ${{ github.event.inputs.tag_name }}
+            - Build Number: ${{ github.event.inputs.version_code }}
+            
+            **Instructions:**
+            1. Android: Install the APK on your device
+            2. Windows: Extract the ZIP and run the EXE file
           draft: true
           artifacts: "artifacts/**/*"
